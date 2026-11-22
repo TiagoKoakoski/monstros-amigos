@@ -163,6 +163,9 @@ func pilotar_auto(delta: float) -> Vector2:
 		marco("inicio_laboratorio", 0.0)
 	if esperar_guia_auto():
 		return Vector2.ZERO
+	# encosta uma vez de propósito na porta verde trancada (balança, nada se perde)
+	if not tem_marco("trancada") and not estado.porta_aberta("canos"):
+		return andar_ate(portas["canos"].ponto + Vector2(-110, 0), delta)
 	var alvo := alvo_auto()
 	depurar_auto(alvo)
 	return andar_ate(alvo, delta)
@@ -171,5 +174,5 @@ func pilotar_auto(delta: float) -> Vector2:
 func marcos_obrigatorios() -> Array[String]:
 	if sala_pedida() != "":
 		return ["festa_laboratorio", "pode_recomecar"]
-	return ["inicio_laboratorio", "guia", "plop", "pocoes", "chave_verde", "abriu_canos", "armadilha", "canos",
+	return ["inicio_laboratorio", "guia", "trancada", "plop", "pocoes", "chave_verde", "abriu_canos", "armadilha", "canos",
 		"chave_laranja", "abriu_formas", "forma_errada", "formas", "festa_laboratorio", "pode_recomecar"]

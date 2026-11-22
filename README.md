@@ -39,10 +39,30 @@ Um salão no meio e salas em volta, cada uma com uma brincadeira:
   volta e empurrar do outro lado). Se mesmo assim uma ficar parada muito tempo,
   ela some com um brilho e volta pro começo.
 - Vaga-lume no castelo espera **9 s** (no jardim, 5 s).
-- Festa no salão com todo mundo; qualquer botão volta pro jardim.
-- **Progresso**: depois que ele entrou no castelo uma vez, nas próximas partidas
-  a porta do castelo já começa aberta (dá pra ir direto). Pra zerar:
-  `rm ~/.local/share/godot/app_userdata/Monstros\ Amigos/progresso.cfg`
+- Festa no salão com todo mundo. Depois abre um **alçapão** no canto do salão, o
+  Frankenstein pula dentro e o vaga-lume mostra o caminho: desce pro laboratório.
+
+## Fase 3 — o laboratório do Frankenstein (porão do castelo)
+
+Mais difícil que o castelo: é preciso pensar um pouco mais em cada sala. Ele
+chega pela escada na sala da **máquina** (com a Múmia). Cada sala terminada
+acende um cabo da máquina; com os três acesos ela liga e começa a festa.
+
+| Sala | O que fazer | Ganha |
+|---|---|---|
+| **Poções** (Frankenstein, aberta) | pegar frascos nos 4 baldes (vermelho, azul, amarelo, branco) e misturar 2 cores no caldeirão. Pedidos: verde, laranja, roxo, rosa. O quadro na parede mostra as misturas. Errou? "plop" e o caldeirão esvazia | chave verde |
+| **Canos** (Lobisomem, porta verde) | girar as peças de cano até a água chegar no vaso. Pra girar, **fica parado em cima** da peça (passar correndo não gira). Tem um cano-armadilha que não leva a lugar nenhum | chave laranja |
+| **Formas** (Drácula, porta laranja) | o painel na parede mostra formas; pisar nos botões das mesmas formas, da esquerda pra direita. Grupos de 1, 2 e 3 formas; as lâmpadas ficam acesas. Errou? Recomeça só o grupo | liga a máquina |
+
+- Vaga-lume no laboratório espera **12 s**.
+- Festa em volta da máquina; qualquer botão volta pro jardim.
+
+## Progresso
+
+Depois que ele entrou no castelo uma vez, nas próximas partidas a porta do
+castelo já começa aberta; depois que chegou no laboratório, o alçapão do salão
+já começa aberto (atalho a qualquer momento). Pra zerar:
+`rm ~/.local/share/godot/app_userdata/Monstros\ Amigos/progresso.cfg`
 
 ## Teste com a criança (o que observar)
 
@@ -62,6 +82,12 @@ No castelo:
 8. Entende empurrar a caixa (e dar a volta nela)?
 9. Consegue pegar os filhotes? Quanto tempo leva o castelo inteiro?
 
+No laboratório:
+10. Usa o quadro de receitas pra misturar as cores, ou só tenta ao acaso?
+11. Descobre sozinho que precisa ficar parado em cima do cano pra girar?
+12. Nas Formas, segue a ordem das lâmpadas da esquerda pra direita?
+13. O laboratório ficou difícil demais em algum ponto? Quanto tempo levou?
+
 ## Verificação
 
 ```bash
@@ -69,9 +95,13 @@ godot --headless --path . --script res://tests/teste_missao.gd       # regras do
 godot --headless --path . --script res://tests/teste_castelo.gd      # regras do castelo (68)
 godot --headless --path . res://tests/teste_castelo_cena.tscn         # castelo montado: casos de controle real (6)
 godot --headless --path . --script res://tests/teste_controle_real.gd # controle 0 e 1 + teclado (17)
-godot --path . -- --autoplay --capturas=/tmp/fotos                     # joga o jogo inteiro sozinho e fotografa
+godot --headless --path . --script res://tests/teste_laboratorio.gd  # regras do laboratório e progresso (107)
+godot --headless --path . res://tests/teste_laboratorio_cena.tscn     # alçapão e laboratório montados (23)
+godot --path . -- --autoplay --capturas=/tmp/fotos                     # joga o jogo inteiro sozinho e fotografa (~6 min)
 godot --path . -- --fase=castelo --autoplay                            # começa direto no castelo
 godot --path . -- --fase=castelo --autoplay --sala=caixas              # testa uma sala só (as anteriores dadas por feitas)
+godot --path . -- --fase=laboratorio --autoplay                        # começa direto no laboratório
+godot --path . -- --fase=laboratorio --autoplay --sala=canos           # uma sala do laboratório (pocoes, canos, formas)
 ```
 
 Opções de teste: `--manter-progresso` (não apaga o progresso de teste), `--depurar`
@@ -83,17 +113,24 @@ vaga-lume, leva um item pro monstro errado de propósito, ajuda os quatro e entr
 pela porta. No castelo: espera o vaga-lume, encosta na porta trancada, faz a
 cozinha, erra uma nota de propósito, acende as velas, empurra uma caixa contra a
 borda e passa por trás dela, encaixa as caixas, leva os filhotes pra cama, vê a
-festa, aperta o botão A (pelo caminho de um controle de verdade), confere que o
-jardim voltou limpo **com a porta aberta**, e joga o jardim de novo até a porta.
+festa e desce pelo alçapão. No laboratório: espera o vaga-lume, encosta na porta
+verde trancada, faz um "plop" de propósito, para em cima do cano-armadilha, erra
+uma forma de propósito, vê a festa, aperta o botão A (pelo caminho de um controle
+de verdade), confere que o jardim voltou limpo **com a porta aberta**, e joga o
+jardim de novo até a porta.
 Avisa se travar em algum obstáculo. Sai com código 0 se tudo deu certo.
 
 ## Estrutura
 
 - `scripts/fase.gd` — base comum das fases: criança, câmera, vaga-lume, sons, festa, modo automático.
 - `scripts/jogo.gd` — autoload `Jogo`: troca de fase com fade e progresso salvo.
-- `scripts/jardim.gd` — fase 1. `scripts/castelo/castelo.gd` — fase 2 (salão, portas, chaves).
+- `scripts/salas/fase_de_salas.gd` — base das fases de salas (salão, paredes, portas
+  com chave, chaveiro, rota do vaga-lume, piloto por sala, `--sala=`) + `atividade`, `porta`, `chaveiro`.
+- `scripts/jardim.gd` — fase 1. `scripts/castelo/castelo.gd` — fase 2 (+ `alcapao`).
+  `scripts/laboratorio/laboratorio.gd` — fase 3 (+ `maquina`).
 - `scripts/castelo/*.gd` — uma sala por arquivo (`cozinha`, `musica`, `biblioteca`,
-  `corredor_caixas`, `quarto`) + peças (`porta`, `chaveiro`, `ladrilho`, `vela`, `caixa`, `filhote`).
+  `corredor_caixas`, `quarto`) + peças (`ladrilho`, `vela`, `caixa`, `filhote`).
+- `scripts/laboratorio/*.gd` — `pocoes`, `canos` (+ `peca_cano`), `formas` (+ `botao_forma`, `painel`).
 - `scripts/estado_missao.gd`, `scripts/regras/*.gd` — regras puras, testadas sem cena.
 - `scripts/jogador.gd`, `monstro.gd`, `item_perdido.gd`, `guia.gd`, `visual.gd`.
 - `scripts/controles.gd` — mapa de controles (autoload), zona morta 0,25.
@@ -104,5 +141,6 @@ Avisa se travar em algum obstáculo. Sai com código 0 se tudo deu certo.
 
 - **Voz dos monstros** em português (VoiceStudio local, voz de banco — nunca
   clonar voz de pessoa real), pra ele ouvir o que cada um quer.
-- Mais fases ou mais monstros depois de ver como ele joga o castelo.
-- Design e plano do castelo: `docs/superpowers/specs/` e `docs/superpowers/plans/`.
+- Próximas fases combinadas: cemitério das abóboras, telhado das estrelas e, depois,
+  dois jogadores.
+- Designs e planos: `docs/superpowers/specs/` e `docs/superpowers/plans/`.
