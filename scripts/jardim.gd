@@ -26,6 +26,13 @@ var monstros: Dictionary[String, Monstro] = {}
 var itens: Dictionary[String, ItemPerdido] = {}
 
 var _auto_errado_feito := false
+var porta_aberta := false
+## depois da festa: monstros já entraram e a criança pode ir pro castelo
+var _ir_pro_castelo := false
+var _entrando := false
+var _porta: Sprite2D
+
+const PORTA_CASTELO := Vector2(1600, CHAO_TOPO + 40)
 
 
 func montar() -> void:
@@ -46,14 +53,18 @@ func montar() -> void:
 	_montar_enfeites()
 	_montar_personagens()
 	_montar_vagalumes()
+	_montar_porta()
 
 
 # ---------------------------------------------------------------- partida
 
 func checar_interacoes() -> void:
+	var p := jogador.global_position
+	if porta_aberta and (not em_festa or _ir_pro_castelo) and p.distance_to(PORTA_CASTELO) < RAIO_MONSTRO:
+		_entrar_no_castelo()
+		return
 	if em_festa:
 		return
-	var p := jogador.global_position
 	if estado.carregando == "":
 		for item_id: String in estado.itens_no_chao():
 			var item := itens[item_id]
@@ -90,6 +101,8 @@ func depois_do_frame() -> void:
 ## Para onde a criança deveria ir agora: o dono do item na mão, ou o item
 ## mais perto no chão.
 func alvo_atual() -> Vector2:
+	if em_festa:
+		return PORTA_CASTELO
 	if estado.carregando != "":
 		return monstros[estado.dono_do_item(estado.carregando)].global_position
 	var melhor := Vector2.ZERO
@@ -102,15 +115,81 @@ func alvo_atual() -> Vector2:
 	return melhor
 
 
+func guia_ligado() -> bool:
+	return not em_festa or _ir_pro_castelo
+
+
+## Festa no jardim: os monstros dançam, a porta do castelo abre e eles entram.
+## Depois a câmera volta pra criança e o vaga-lume mostra a porta.
 func _festa() -> void:
 	for m: Monstro in monstros.values():
 		m.dancar()
-	comecar_festa(inicio + Vector2(0, -80), true)
+	comecar_festa(inicio + Vector2(0, -80), false)
 	marco("festa", 3.0)
+	var t := create_tween()
+	t.tween_interval(3.5)
+	t.tween_callback(_abrir_porta)
+	t.tween_interval(1.0)
+	t.tween_callback(_monstros_entram)
+	t.tween_interval(3.2)
+	t.tween_callback(func() -> void:
+		(get_node("Interface/Chuva") as CPUParticles2D).emitting = false
+		_ir_pro_castelo = true
+		_tempo_sem_progresso = espera_guia - 1.0  # vaga-lume aparece logo
+		seguir_jogador())
 
 
-func ao_recomecar() -> void:
-	Jogo.trocar_fase(Jogo.JARDIM)
+func _abrir_porta() -> void:
+	if porta_aberta:
+		return
+	porta_aberta = true
+	tocar("porta")
+	_porta.visible = true
+	_porta.scale = Vector2(0.2, 1.0)
+	create_tween().tween_property(get_node("LuzPorta"), "modulate:a", 0.35, 0.6)
+	create_tween().tween_property(_porta, "scale", Vector2.ONE, 0.6).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _monstros_entram() -> void:
+	var i := 0
+	for m: Monstro in monstros.values():
+		var t := create_tween()
+		t.tween_interval(i * 0.35)
+		t.tween_property(m, "position", PORTA_CASTELO + Vector2(0, 20), 1.6).set_trans(Tween.TRANS_SINE)
+		t.parallel().tween_property(m, "modulate:a", 0.0, 0.5).set_delay(1.3)
+		t.parallel().tween_property(m, "scale", Vector2.ONE * 0.7, 1.6)
+		i += 1
+
+
+func _entrar_no_castelo() -> void:
+	if _entrando:
+		return
+	_entrando = true
+	if Jogo.auto:
+		marco("porta")
+		var falhas := _auto_falhas + verificar_fim_auto()
+		if not falhas.is_empty():
+			_sair_com(falhas)
+			return
+	Jogo.progresso.marcar_castelo_aberto()
+	tocar("porta")
+	Jogo.trocar_fase(Jogo.CASTELO)
+
+
+func _montar_porta() -> void:
+	carregar_som("porta")
+	porta_aberta = Jogo.progresso.castelo_aberto()
+	_porta = Visual.sprite_em_pe(load("res://arte/porta_aberta.svg") as Texture2D)
+	_porta.position = Vector2(1600, CHAO_TOPO + 31)
+	_porta.visible = porta_aberta
+	add_child(_porta)
+	var luz := Visual.luz(Color(1.0, 0.85, 0.5, 0.35 if porta_aberta else 0.0), 420.0)
+	luz.position = Vector2(1600, CHAO_TOPO - 40)
+	luz.name = "LuzPorta"
+	add_child(luz)
+	# atrás da criança e dos monstros (o _mundo vem depois)
+	move_child(_porta, _mundo.get_index())
+	move_child(luz, _mundo.get_index())
 
 
 # ---------------------------------------------------------------- montagem do mundo
@@ -297,7 +376,7 @@ func iniciar_auto() -> void:
 
 func pilotar_auto(delta: float) -> Vector2:
 	if em_festa:
-		return Vector2.ZERO
+		return andar_ate(PORTA_CASTELO, delta) if _ir_pro_castelo else Vector2.ZERO
 	# fica parado no começo pra provar que o vaga-lume aparece sozinho
 	if _tempo < espera_guia + 1.5:
 		if _tempo > 2.0:
@@ -325,7 +404,7 @@ func verificar_fim_auto() -> Array[String]:
 	var falhas: Array[String] = []
 	if not estado.todos_ajudados():
 		falhas.append("nem todos os monstros foram ajudados (%d/4)" % estado.quantos_ajudados())
-	for obrigatorio: String in ["guia", "pegou", "errado", "entregou", "festa", "pode_recomecar"]:
+	for obrigatorio: String in ["guia", "pegou", "errado", "entregou", "festa", "porta"]:
 		if not tem_marco(obrigatorio):
 			falhas.append("não passou pelo momento: %s" % obrigatorio)
 	return falhas

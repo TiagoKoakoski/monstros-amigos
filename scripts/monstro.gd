@@ -14,6 +14,10 @@ var _tempo := 0.0
 var _dancando := false
 var _ultimo_hum := -10.0
 var _altura := 260.0
+var _desenho: Sprite2D
+var _icones: Array[Sprite2D] = []
+
+const COR_SILHUETA := Color(0.22, 0.18, 0.36, 0.6)
 
 
 func configurar(p_id: String, p_item: String, textura: Texture2D, textura_item: Texture2D) -> void:
@@ -38,11 +42,74 @@ func configurar(p_id: String, p_item: String, textura: Texture2D, textura_item: 
 	var fundo := Sprite2D.new()
 	fundo.texture = load("res://arte/balao.svg") as Texture2D
 	_balao.add_child(fundo)
-	var desenho := Sprite2D.new()
-	desenho.texture = textura_item
-	desenho.position = Vector2(0, -18)
-	desenho.scale = Vector2.ONE * minf(0.75, 90.0 / maxf(textura_item.get_width(), textura_item.get_height()))
-	_balao.add_child(desenho)
+	_desenho = Sprite2D.new()
+	_desenho.texture = textura_item
+	_desenho.position = Vector2(0, -18)
+	_desenho.scale = Vector2.ONE * minf(0.75, 90.0 / maxf(textura_item.get_width(), textura_item.get_height()))
+	_balao.add_child(_desenho)
+
+
+## Balão com vários desenhos lado a lado (ex.: a receita do bolo).
+## Os que ainda faltam aparecem como silhueta.
+func mostrar_varios(texturas: Array[Texture2D]) -> void:
+	_desenho.visible = false
+	var fundo := _balao.get_child(0) as Sprite2D
+	var n := texturas.size()
+	fundo.scale.x = 0.55 + 0.5 * n
+	var passo := 92.0
+	for i in n:
+		var s := Sprite2D.new()
+		s.texture = texturas[i]
+		s.position = Vector2((i - (n - 1) * 0.5) * passo, -18)
+		s.scale = Vector2.ONE * minf(0.75, 80.0 / maxf(texturas[i].get_width(), texturas[i].get_height()))
+		s.modulate = COR_SILHUETA
+		_balao.add_child(s)
+		_icones.append(s)
+
+
+## Um dos desenhos do balão chegou: fica colorido e dá um pulinho.
+func marcar_icone(i: int) -> void:
+	var s := _icones[i]
+	s.modulate = Color.WHITE
+	var base := s.scale
+	var t := create_tween()
+	t.tween_property(s, "scale", base * 1.5, 0.15).set_trans(Tween.TRANS_BACK)
+	t.tween_property(s, "scale", base, 0.2)
+
+
+## Recebe uma parte do pedido: o item voa até ele e some.
+func receber_parcial(item: Node2D) -> void:
+	item.reparent(self, true)
+	item.z_index = 5
+	var t := create_tween()
+	t.tween_property(item, "position", Vector2(80, -90), 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.parallel().tween_property(item, "scale", Vector2.ONE * 0.5, 0.4)
+	t.tween_property(item, "modulate:a", 0.0, 0.3)
+	t.tween_callback(item.queue_free)
+	var pulo := create_tween()
+	pulo.tween_property(_corpo, "position:y", -40.0, 0.15).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	pulo.tween_property(_corpo, "position:y", 0.0, 0.15).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_coracao(0.0, Vector2(0, -_altura * 0.7))
+
+
+## Pedido completo (sem item na mão): balão some e ele comemora.
+func concluir() -> void:
+	ajudado = true
+	_farol.modulate.a = 0.0
+	var some := create_tween()
+	some.tween_property(_balao, "scale", Vector2.ZERO, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	comemorar()
+
+
+## Dá uma voltinha (rodada da música, por exemplo).
+func voltinha() -> void:
+	var t := create_tween()
+	t.tween_property(_corpo, "rotation", TAU, 0.6).set_trans(Tween.TRANS_SINE)
+	t.tween_callback(func() -> void: _corpo.rotation = 0.0)
+
+
+func altura() -> float:
+	return _altura
 
 
 func _process(delta: float) -> void:

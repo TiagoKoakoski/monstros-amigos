@@ -40,6 +40,7 @@ var _auto_desvio := 0.0
 var _auto_desvio_dir := Vector2.ZERO
 var _auto_travadas := 0
 var _saindo := false
+var _pronta := false
 
 
 func _ready() -> void:
@@ -48,6 +49,7 @@ func _ready() -> void:
 		if scene_file_path != Jogo.fase_inicial():
 			Jogo.trocar_fase.call_deferred(Jogo.fase_inicial())
 			return
+	_pronta = true
 	Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
 	_mundo = Node2D.new()
 	_mundo.y_sort_enabled = true
@@ -139,6 +141,8 @@ func verificar_fim_auto() -> Array[String]:
 # ---------------------------------------------------------------- partida
 
 func _physics_process(delta: float) -> void:
+	if not _pronta:
+		return
 	_tempo += delta
 	if Jogo.auto and not _saindo:
 		if _tempo > tempo_limite_auto():
@@ -158,6 +162,8 @@ func _physics_process(delta: float) -> void:
 
 
 func _process(_delta: float) -> void:
+	if not _pronta:
+		return
 	if _seguindo:
 		camera.global_position = jogador.global_position + Vector2(0, -110)
 	if _botao_jogar and _botao_jogar.visible:
