@@ -7,7 +7,8 @@ var falhou := 0
 
 
 func _initialize() -> void:
-	for t: String in ["teste_chaves_novas", "teste_esconde_sorteio", "teste_esconde_achar_entregar"]:
+	for t: String in ["teste_chaves_novas", "teste_esconde_sorteio", "teste_esconde_achar_entregar",
+			"teste_horta_passos", "teste_horta_erros_nao_perdem", "teste_horta_proximo_passo"]:
 		if call(t) != true:
 			falhou += 1
 			push_error("FALHOU %s: não terminou (erro em tempo de execução?)" % t)
@@ -90,4 +91,65 @@ func teste_esconde_achar_entregar() -> bool:
 	e.entregar()
 	igual(e.entregues(), 5, "5 entregues")
 	igual(e.terminou(), true, "terminou")
+	return true
+
+
+func _horta():
+	return _classe("estado_horta").new()
+
+
+func teste_horta_passos() -> bool:
+	var h = _horta()
+	igual(h.canteiro(0), "vazio", "começa vazio")
+	igual(h.usar(0, "semente"), "plantou", "semente no vazio: planta")
+	igual(h.canteiro(0), "plantado", "plantado")
+	igual(h.usar(0, "agua"), "regou", "água no plantado: rega")
+	igual(h.canteiro(0), "crescendo", "crescendo")
+	h.crescer(0)
+	igual(h.canteiro(0), "pronta", "pronta")
+	igual(h.usar(0, ""), "colheu", "mão vazia na pronta: colhe")
+	igual(h.canteiro(0), "colhida", "colhida")
+	igual(h.entregar(), "entregou", "1ª na carroça")
+	for i in [1, 2]:
+		h.usar(i, "semente")
+		h.usar(i, "agua")
+		h.crescer(i)
+		h.usar(i, "")
+		var r: String = h.entregar()
+		igual(r, "fim" if i == 2 else "entregou", "abóbora %d" % (i + 1))
+	igual(h.entregues(), 3, "3 entregues")
+	return true
+
+
+func teste_horta_erros_nao_perdem() -> bool:
+	var h = _horta()
+	igual(h.usar(0, "agua"), "hum", "água no vazio: hum")
+	igual(h.canteiro(0), "vazio", "continua vazio")
+	h.usar(0, "semente")
+	igual(h.usar(0, "semente"), "hum", "semente no plantado: hum")
+	igual(h.usar(0, "abobora"), "hum", "abóbora no canteiro: hum")
+	igual(h.usar(0, ""), "hum", "mão vazia no plantado: hum")
+	igual(h.canteiro(0), "plantado", "continua plantado")
+	igual(h.entregues(), 0, "nada entregue")
+	return true
+
+
+func teste_horta_proximo_passo() -> bool:
+	var h = _horta()
+	igual(h.proximo_passo(""), "sementes", "nada feito: sementes")
+	igual(h.proximo_passo("semente"), "canteiro_vazio", "com semente: canteiro vazio")
+	h.usar(0, "semente")
+	igual(h.proximo_passo(""), "poco", "plantado: poço")
+	igual(h.proximo_passo("agua"), "canteiro_plantado", "com água: canteiro plantado")
+	h.usar(0, "agua")
+	h.crescer(0)
+	igual(h.proximo_passo(""), "pronta", "pronta: colher")
+	igual(h.proximo_passo("abobora"), "carroca", "com abóbora: carroça")
+	igual(h.canteiro_para("canteiro_vazio"), 1, "primeiro canteiro vazio")
+	igual(h.canteiro_para("pronta"), 0, "canteiro pronto")
+	var nova = _horta()
+	igual(nova.proximo_passo("agua"), "poco", "água sem nada plantado: devolve no poço")
+	for i in 3:
+		nova.usar(i, "semente")
+	igual(nova.proximo_passo("semente"), "sementes", "semente sem canteiro vazio: devolve no saco")
 	return true

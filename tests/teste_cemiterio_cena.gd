@@ -20,7 +20,8 @@ func _rodar() -> void:
 	jogo.progresso.apagar()
 	for t: String in ["teste_porta_fundos_fechada_sem_progresso", "teste_porta_fundos_aberta_com_progresso",
 			"teste_porta_fundos_fora_do_caminho", "teste_cemiterio_marca_progresso",
-			"teste_fantasminha_segue_pela_porta"]:
+			"teste_fantasminha_segue_pela_porta", "teste_laco_semente_agua_nao_cala_o_vagalume",
+			"teste_parado_no_poco_fica_com_a_agua"]:
 		if await call(t) != true:
 			falhou += 1
 			push_error("FALHOU %s: não terminou" % t)
@@ -108,5 +109,45 @@ func teste_fantasminha_segue_pela_porta() -> bool:
 	_andar(c, lap, Cemiterio.SALAO.get_center())
 	var d := lap.fantasminhas[i].global_position.distance_to(c.jogador.global_position)
 	igual(d < 300.0, true, "fantasminha veio junto até a praça (%.0f px)" % d)
+	_fora(c)
+	return true
+
+
+func teste_laco_semente_agua_nao_cala_o_vagalume() -> bool:
+	var c := await _cena(Jogo.CEMITERIO) as Cemiterio
+	var h := c.atividades["horta"] as Horta
+	c._tempo_sem_progresso = 0.0
+	for i in 20:
+		c._tempo_sem_progresso += 1.0
+		h.checar(h.saco)  # pega semente
+		h.checar(c.inicio)
+		h.checar(h.saco)  # devolve
+		h.checar(c.inicio)
+		h.checar(h.poco)  # pega água
+		h.checar(h.canteiros[0])  # água no vazio: hum
+		h.checar(h.poco)  # devolve
+		h.checar(c.inicio)
+	igual(c.tempo_sem_progresso() >= 14.0, true, "20 s pegando e devolvendo semente/água: vaga-lume ainda vem")
+	igual(c.estado.carregando, "", "mão vazia no fim (devolveu)")
+	h.checar(h.saco)
+	h.checar(h.canteiros[0])
+	igual(c.tempo_sem_progresso(), 0.0, "plantar conta como avanço")
+	_fora(c)
+	return true
+
+
+func teste_parado_no_poco_fica_com_a_agua() -> bool:
+	var c := await _cena(Jogo.CEMITERIO) as Cemiterio
+	var h := c.atividades["horta"] as Horta
+	for i in 30:
+		h.checar(h.poco)
+	igual(c.estado.carregando, "agua", "parado no poço: pega a água uma vez e fica com ela")
+	var borda := h.poco + Vector2(0, Horta.RAIO_COISA + 20.0)
+	for i in 11:
+		h.checar(borda + Vector2(0, -3.0 if i % 2 == 0 else 3.0))  # tremendo na borda do alcance
+	igual(c.estado.carregando, "agua", "tremendo na borda do poço: não devolve")
+	h.checar(c.inicio)
+	h.checar(h.poco)
+	igual(c.estado.carregando, "", "saiu e voltou: devolve")
 	_fora(c)
 	return true

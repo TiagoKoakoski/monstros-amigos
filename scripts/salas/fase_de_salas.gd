@@ -334,7 +334,10 @@ func alvo_atual() -> Vector2:
 
 func alvo_auto() -> Vector2:
 	var destino := sala_do_jogador()
-	if destino == "" or not atividades.has(destino) or atividades[destino].terminada() or estado.carregando != "":
+	if destino == "" or not atividades.has(destino) or atividades[destino].terminada():
+		return alvo_atual()
+	# com algo na mão, o piloto da sala só decide se a coisa é dela
+	if estado.carregando != "" and not atividades[destino].dona_de(estado.carregando):
 		return alvo_atual()
 	return atividades[destino].alvo_auto()
 
