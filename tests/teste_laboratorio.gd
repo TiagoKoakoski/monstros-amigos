@@ -9,7 +9,8 @@ var falhou := 0
 func _initialize() -> void:
 	for t: String in ["teste_progresso_por_fase", "teste_estado_salas", "teste_mistura", "teste_pedidos_em_ordem",
 			"teste_ajuda", "teste_canos_rotacao", "teste_canos_padrao", "teste_canos_armadilha_nao_conecta",
-			"teste_canos_toda_rotacao_alcancavel"]:
+			"teste_canos_toda_rotacao_alcancavel", "teste_formas_grupos", "teste_formas_sem_oposto_nem_repeticao",
+			"teste_formas_erro_recomeca_grupo", "teste_musica_igual"]:
 		if call(t) != true:
 			falhou += 1
 			push_error("FALHOU %s: não terminou (erro em tempo de execução?)" % t)
@@ -188,4 +189,71 @@ func teste_canos_toda_rotacao_alcancavel() -> bool:
 			c.girar(cel)
 		igual(c.lados(cel), inicio, "%s volta ao começo em 4 giros" % cel)
 		igual(vistos.size(), 2 if c.tipo(cel) == "reta" else 4, "%s passa por todas as posições" % cel)
+	return true
+
+
+const OPOSTOS := {0: 3, 3: 0, 1: 2, 2: 1}
+const GRUPOS: Array[int] = [1, 1, 1, 2, 2, 3, 3]
+
+
+func _formas(semente: int):
+	return _classe("estado_sequencia").new(semente, GRUPOS, 4, OPOSTOS, true)
+
+
+func _percorrer(s) -> Array:
+	var tamanhos := []
+	while not s.terminou():
+		var n := 0
+		var r := ""
+		while true:
+			r = s.pisar(s.proxima_cor())
+			n += 1
+			if r != "certo":
+				break
+		tamanhos.append(n)
+	return tamanhos
+
+
+func teste_formas_grupos() -> bool:
+	igual(_percorrer(_formas(7)), [1, 1, 1, 2, 2, 3, 3], "grupos de 1, 1, 1, 2, 2, 3, 3 formas")
+	return true
+
+
+func teste_formas_sem_oposto_nem_repeticao() -> bool:
+	var ruins := 0
+	for semente in range(1, 301):
+		var s = _formas(semente)
+		var anterior := -1
+		while not s.terminou():
+			var f: int = s.proxima_cor()
+			if anterior != -1 and (f == anterior or OPOSTOS[anterior] == f):
+				ruins += 1
+			anterior = f
+			s.pisar(f)
+	igual(ruins, 0, "300 sementes: nunca a mesma forma nem o canto oposto em seguida (nem entre grupos)")
+	return true
+
+
+func teste_formas_erro_recomeca_grupo() -> bool:
+	var s = _formas(7)
+	for i in 3:
+		s.pisar(s.proxima_cor())
+	igual(s.rodada, 3, "três grupos de uma forma feitos")
+	var primeira: int = s.proxima_cor()
+	s.pisar(primeira)
+	var errada: int = (s.proxima_cor() + 1) % 4
+	igual(s.pisar(errada), "erro", "forma errada no meio do grupo")
+	igual(s.proxima_cor(), primeira, "recomeça o mesmo grupo")
+	igual(s.rodada, 3, "não volta grupo")
+	return true
+
+
+func teste_musica_igual() -> bool:
+	var esperado := {7: [[3, 1], [0, 1, 3], [1, 3, 1, 0]], 1: [[1, 0], [1, 0, 1], [1, 3, 1, 3]],
+		42: [[1, 0], [0, 2, 3], [1, 3, 1, 3]]}
+	for semente: int in esperado:
+		var s = _classe("estado_sequencia").new(semente, [2, 3, 4] as Array[int], 4, OPOSTOS)
+		for r in 3:
+			s.rodada = r
+			igual(s.sequencia(), esperado[semente][r] as Array[int], "música semente %d rodada %d igual a antes" % [semente, r])
 	return true

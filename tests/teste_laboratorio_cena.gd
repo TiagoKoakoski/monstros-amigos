@@ -21,7 +21,7 @@ func _rodar() -> void:
 	for t: String in ["teste_alcapao_fechado_sem_progresso", "teste_alcapao_aberto_com_progresso",
 			"teste_alcapao_fora_do_caminho", "teste_laboratorio_marca_progresso", "teste_plop_nao_cala_o_vagalume",
 			"teste_caminho_pro_alcapao_sai_da_sala", "teste_passar_correndo_nao_gira", "teste_parado_gira",
-			"teste_armadilha_nao_cala_o_vagalume"]:
+			"teste_armadilha_nao_cala_o_vagalume", "teste_formas_borda", "teste_formas_vagalume"]:
 		if await call(t) != true:
 			falhou += 1
 			push_error("FALHOU %s: não terminou" % t)
@@ -163,6 +163,39 @@ func teste_armadilha_nao_cala_o_vagalume() -> bool:
 	for i in 300:
 		k.checar(k.centro(Vector2i(1, 1)))
 	igual(l.tempo_sem_progresso() >= 5.0, true, "girar a armadilha 5 s não conta como avanço")
+	_fora(l)
+	Jogo.progresso.apagar()
+	return true
+
+
+func teste_formas_borda() -> bool:
+	var l := await _cena(Jogo.LABORATORIO) as Laboratorio
+	var f := l.atividades["formas"] as Formas
+	var certo := f.seq.proxima_cor()
+	f.fase = "pausa"
+	f.checar(f.botoes[certo].global_position)  # já estava em cima quando o grupo começou
+	f.fase = "vez"
+	f.checar(f.botoes[certo].global_position)
+	igual(f.seq.rodada, 0, "em cima do botão quando o grupo muda: não conta")
+	f.checar(f._meio)
+	f.checar(f.botoes[certo].global_position)
+	igual(f.seq.rodada, 1, "saiu e entrou: conta")
+	_fora(l)
+	Jogo.progresso.apagar()
+	return true
+
+
+func teste_formas_vagalume() -> bool:
+	var l := await _cena(Jogo.LABORATORIO) as Laboratorio
+	var f := l.atividades["formas"] as Formas
+	var certo := f.seq.proxima_cor()
+	f._sobre = certo
+	igual(f.alvo(), f._meio, "em cima do botão da vez: vaga-lume mostra o meio")
+	f._sobre = -1
+	l.jogador.global_position = f._meio
+	igual(f.alvo(), f.botoes[certo].global_position, "no meio: mostra o botão da vez")
+	l.jogador.global_position = Laboratorio.VAOS["formas"].get_center() + Vector2(0, 140)
+	igual(f.alvo(), f._meio, "chegando pela porta: primeiro o meio (a diagonal pisaria noutro botão)")
 	_fora(l)
 	Jogo.progresso.apagar()
 	return true

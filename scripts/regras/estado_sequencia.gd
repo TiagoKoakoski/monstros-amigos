@@ -10,16 +10,22 @@ var _indice := 0
 
 ## `opostos`: cor -> cor que fica no canto oposto (ir de uma à outra no
 ## direcional passa por cima de outro ladrilho); nunca ficam seguidas.
-func _init(semente: int, tamanhos: Array[int] = [2, 3, 4], cores: int = 4, opostos: Dictionary = {}) -> void:
+## `entre_grupos`: a regra vale também da última de um grupo pra primeira do
+## próximo (as Formas, onde os grupos vêm um atrás do outro sem demonstração).
+func _init(semente: int, tamanhos: Array[int] = [2, 3, 4], cores: int = 4, opostos: Dictionary = {},
+		entre_grupos := false) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = semente
+	var ultima := -1
 	for tam: int in tamanhos:
 		var seq: Array[int] = []
 		for i in tam:
+			var anterior := seq[i - 1] if i > 0 else (ultima if entre_grupos else -1)
 			var c := rng.randi_range(0, cores - 1)
-			while i > 0 and (c == seq[i - 1] or opostos.get(seq[i - 1], -1) == c):
+			while anterior != -1 and (c == anterior or opostos.get(anterior, -1) == c):
 				c = rng.randi_range(0, cores - 1)
 			seq.append(c)
+		ultima = seq[-1]
 		_sequencias.append(seq)
 
 
