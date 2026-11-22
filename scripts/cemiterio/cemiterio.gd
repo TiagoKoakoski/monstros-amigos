@@ -34,7 +34,7 @@ const PAREDES := [
 	Rect2(2800, 1100, 1200, 100), Rect2(3900, 1100, 100, 1200), Rect2(2800, 2200, 1200, 100),
 ]
 ## cada área entra aqui quando fica pronta
-const ORDEM: Array[String] = []
+const ORDEM: Array[String] = ["lapides"]
 const CHAVE_DA_SALA := {"lapides": "roxa", "horta": "amarela", "labirinto": "rosa"}
 const PORTAS := {"horta": "roxa", "labirinto": "amarela", "arena": "rosa"}
 const CORES_PORTA := {"horta": Color("#a66bff"), "labirinto": Color("#ffd23f"), "arena": Color("#ff9ecb")}
@@ -66,7 +66,10 @@ func configurar_mapa() -> void:
 		carregar_som(nome)
 
 
-func nova_atividade(_id: String) -> Atividade:
+func nova_atividade(id: String) -> Atividade:
+	match id:
+		"lapides":
+			return Lapides.new()
 	return null
 
 
@@ -114,6 +117,14 @@ func festa_final() -> void:
 		t.tween_interval(0.8 + i * 0.25)
 		t.tween_property(m, "global_position", SALAO.get_center() + lugares[i % lugares.size()], 1.8).set_trans(Tween.TRANS_SINE)
 		t.tween_callback(m.dancar)
+	# os fantasminhas vêm junto e dançam em volta
+	if atividades.has("lapides"):
+		var filhos := (atividades["lapides"] as Lapides).convidados()
+		for j in filhos.size():
+			var a := TAU * j / filhos.size()
+			var t := create_tween()
+			t.tween_interval(1.0 + j * 0.15)
+			t.tween_property(filhos[j], "global_position", SALAO.get_center() + Vector2(cos(a) * 520.0, 60.0 + sin(a) * 260.0), 1.8).set_trans(Tween.TRANS_SINE)
 	comecar_festa(SALAO.get_center() + Vector2(0, -60), true)
 	marco("festa_cemiterio", 4.0)
 
@@ -148,4 +159,6 @@ func pilotar_auto(delta: float) -> Vector2:
 
 
 func marcos_obrigatorios() -> Array[String]:
-	return ["festa_cemiterio", "pode_recomecar"]
+	if sala_pedida() != "":
+		return ["festa_cemiterio", "pode_recomecar"]
+	return ["inicio_cemiterio", "guia", "vazio", "lapides", "chave_roxa", "festa_cemiterio", "pode_recomecar"]

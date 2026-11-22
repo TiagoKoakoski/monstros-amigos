@@ -19,7 +19,8 @@ func _rodar() -> void:
 	jogo.progresso = Progresso.new(PROGRESSO)  # nunca o da criança
 	jogo.progresso.apagar()
 	for t: String in ["teste_porta_fundos_fechada_sem_progresso", "teste_porta_fundos_aberta_com_progresso",
-			"teste_porta_fundos_fora_do_caminho", "teste_cemiterio_marca_progresso"]:
+			"teste_porta_fundos_fora_do_caminho", "teste_cemiterio_marca_progresso",
+			"teste_fantasminha_segue_pela_porta"]:
 		if await call(t) != true:
 			falhou += 1
 			push_error("FALHOU %s: não terminou" % t)
@@ -86,3 +87,26 @@ func teste_cemiterio_marca_progresso() -> bool:
 	_fora(c)
 	return true
 
+
+## Anda a criança na velocidade de verdade (380 px/s ≈ 6 px por quadro) até `ate`.
+func _andar(c: FaseDeSalas, sala: Node, ate: Vector2) -> void:
+	var de := c.jogador.global_position
+	var passos := int(de.distance_to(ate) / 6.0) + 1
+	for k in passos:
+		c.jogador.global_position = de.lerp(ate, float(k + 1) / passos)
+		sala._physics_process(1.0 / 60.0)
+
+
+func teste_fantasminha_segue_pela_porta() -> bool:
+	var c := await _cena(Jogo.CEMITERIO) as Cemiterio
+	var lap := c.atividades["lapides"] as Lapides
+	var i: int = lap.fantasminhas.keys()[0]
+	c.jogador.global_position = lap.lugares[i]
+	lap.checar(lap.lugares[i])
+	igual(lap.esconde.seguindo().size(), 1, "achou um fantasminha")
+	_andar(c, lap, Cemiterio.VAOS["lapides"].get_center() + Vector2(-140, 0))
+	_andar(c, lap, Cemiterio.SALAO.get_center())
+	var d := lap.fantasminhas[i].global_position.distance_to(c.jogador.global_position)
+	igual(d < 300.0, true, "fantasminha veio junto até a praça (%.0f px)" % d)
+	_fora(c)
+	return true
