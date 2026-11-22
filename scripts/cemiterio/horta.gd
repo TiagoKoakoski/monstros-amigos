@@ -8,6 +8,10 @@ const RAIO_CANTEIRO := 100.0
 const RAIO_COISA := 115.0
 const RAIO_CARROCA := 140.0
 const CRESCE := 2.0
+## colisão no pé de cada coisa: estreita o bastante pra encostar de lado
+const BASE_SACO := Vector2(120, 30)
+const BASE_POCO := Vector2(150, 40)
+const BASE_CARROCA := Vector2(160, 40)
 
 var horta: EstadoHorta
 var lobi: Monstro
@@ -32,11 +36,13 @@ func montar() -> void:
 	mapa.piso(area, Color("#8cc4ab"), Color("#7fb8a0"), false)
 	saco = o + Vector2(150, 250)
 	poco = o + Vector2(950, 260)
-	carroca = o + Vector2(950, 880)
-	mapa.enfeite("saco_sementes", saco, Vector2(120, 30))
-	mapa.enfeite("poco", poco, Vector2(200, 40))
-	mapa.enfeite("carroca", carroca, Vector2(230, 40))
-	for pos: Vector2 in [o + Vector2(300, 650), o + Vector2(550, 820), o + Vector2(800, 650)]:
+	# arrumado pra que nenhum caminho reto entre saco, poço, carroça e canteiros
+	# passe em cima de outro canteiro (senão toca "hum" no caminho certo)
+	carroca = o + Vector2(450, 630)
+	mapa.enfeite("saco_sementes", saco, BASE_SACO)
+	mapa.enfeite("poco", poco, BASE_POCO)
+	mapa.enfeite("carroca", carroca, BASE_CARROCA)
+	for pos: Vector2 in [o + Vector2(150, 860), o + Vector2(480, 890), o + Vector2(810, 860)]:
 		canteiros.append(pos)
 		var terra := Polygon2D.new()
 		var pts := PackedVector2Array()
@@ -203,6 +209,14 @@ func dona_de(item: String) -> bool:
 
 
 func alvo() -> Vector2:
+	var a := _alvo_do_passo()
+	# já está no saco/poço que o vaga-lume mostraria: precisa sair e voltar
+	if _junto == "saco" and a == saco or _junto == "poco" and a == poco:
+		return a + (Vector2(480, 600) + area.position - a).normalized() * 240.0
+	return a
+
+
+func _alvo_do_passo() -> Vector2:
 	match horta.proximo_passo(_na_mao()):
 		"canteiro_vazio":
 			return canteiros[horta.canteiro_para("canteiro_vazio")]

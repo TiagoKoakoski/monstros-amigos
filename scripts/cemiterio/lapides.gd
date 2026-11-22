@@ -17,7 +17,7 @@ const ESCONDERIJOS := [
 	[Vector2(300, 1500), "arbusto"], [Vector2(800, 1550), "lapide_gato"],
 ]
 const BASES := {"lapide_flor": Vector2(110, 30), "lapide_gato": Vector2(110, 30), "lapide_coracao": Vector2(110, 30),
-	"abobora_grande": Vector2(190, 40), "arbusto": Vector2(190, 40)}
+	"abobora_grande": Vector2(120, 40), "arbusto": Vector2(120, 40)}  # estreitas: dá pra encostar de lado
 const ENTRE_RISADAS := 3.0
 
 var esconde: EstadoEsconde

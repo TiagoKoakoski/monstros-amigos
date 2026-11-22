@@ -23,7 +23,8 @@ func _rodar() -> void:
 			"teste_fantasminha_segue_pela_porta", "teste_laco_semente_agua_nao_cala_o_vagalume",
 			"teste_parado_no_poco_fica_com_a_agua", "teste_vagalume_labirinto_nao_atravessa",
 			"teste_saida_do_labirinto_pelos_corredores", "teste_fantasmao_fica_na_arena", "teste_fantasmao_cansa",
-			"teste_pegada_conta_uma_vez", "teste_ganha_devagar"]:
+			"teste_pegada_conta_uma_vez", "teste_ganha_devagar", "teste_encostar_de_lado_alcanca",
+			"teste_vagalume_nao_aponta_onde_ja_esta", "teste_horta_caminhos_nao_passam_em_canteiro"]:
 		if await call(t) != true:
 			falhou += 1
 			push_error("FALHOU %s: não terminou" % t)
@@ -244,5 +245,56 @@ func teste_ganha_devagar() -> bool:
 		p += (f.global_position - p).normalized() * 150.0 * QUADRO  # analógico meio inclinado
 		f.mover(QUADRO, p)
 	igual(f.pegadas >= 3, true, "perseguindo a 150 px/s, pega 3 vezes em 40 s (%d)" % f.pegadas)
+	_fora(c)
+	return true
+
+
+const RAIO_CRIANCA := 38.0
+
+
+func teste_encostar_de_lado_alcanca() -> bool:
+	# a criança para na colisão a (meia largura + raio dela) do pé da coisa: tem que estar no alcance
+	for nome: String in Lapides.BASES:
+		var b: Vector2 = Lapides.BASES[nome]
+		igual(b.x * 0.5 + RAIO_CRIANCA < Lapides.RAIO_ESCONDERIJO, true, "esconderijo %s alcançável de lado" % nome)
+	igual(Horta.BASE_CARROCA.x * 0.5 + RAIO_CRIANCA < Horta.RAIO_CARROCA, true, "carroça alcançável de lado")
+	igual(Horta.BASE_POCO.x * 0.5 + RAIO_CRIANCA < Horta.RAIO_COISA + 20.0, true, "poço alcançável de lado")
+	igual(Horta.BASE_SACO.x * 0.5 + RAIO_CRIANCA < Horta.RAIO_COISA, true, "saco alcançável de lado")
+	return true
+
+
+func teste_vagalume_nao_aponta_onde_ja_esta() -> bool:
+	var c := await _cena(Jogo.CEMITERIO) as Cemiterio
+	var h := c.atividades["horta"] as Horta
+	c.jogador.global_position = h.poco
+	h.checar(h.poco)  # pegou água, nada plantado: precisa devolver (sair e voltar)
+	var alvo := h.alvo()
+	igual(alvo.distance_to(h.poco) > Horta.RAIO_COISA + 60.0, true, "parado no poço com água: vaga-lume mostra sair um pouco (%.0f px)" % alvo.distance_to(h.poco))
+	c.jogador.global_position = c.inicio
+	h.checar(c.inicio)
+	igual(h.alvo(), h.poco, "longe do poço: mostra o poço")
+	_fora(c)
+	return true
+
+
+func teste_horta_caminhos_nao_passam_em_canteiro() -> bool:
+	var c := await _cena(Jogo.CEMITERIO) as Cemiterio
+	var h := c.atividades["horta"] as Horta
+	# trajetos que existem: de saco/poço/carroça/portão até qualquer coisa
+	# (de canteiro a canteiro não: entre um e outro sempre passa no saco, poço ou carroça)
+	var estacoes: Array[Vector2] = [h.saco, h.poco, h.carroca, Cemiterio.VAOS["horta"].get_center() + Vector2(140, 0)]
+	var pontos: Array[Vector2] = [h.saco, h.poco, h.carroca]
+	pontos.append_array(h.canteiros)
+	var ruins := 0
+	for a: Vector2 in estacoes:
+		for b: Vector2 in pontos:
+			if a == b:
+				continue
+			for k: Vector2 in h.canteiros:
+				if k == a or k == b:
+					continue
+				if Geometry2D.get_closest_point_to_segment(k, a, b).distance_to(k) < Horta.RAIO_CANTEIRO + 20.0:
+					ruins += 1
+	igual(ruins, 0, "nenhum caminho reto entre duas coisas da horta passa em cima de outro canteiro")
 	_fora(c)
 	return true
