@@ -20,11 +20,11 @@ var _auto_parada := 0.0
 
 func montar() -> void:
 	id = "caixas"
-	castelo.carregar_som("encaixe")
+	mapa.carregar_som("encaixe")
 	var o := area.position
-	castelo.piso(area, Color("#b9b0c9"), Color("#a79dba"), false)
-	castelo.tocha(o + Vector2(250, 0))
-	castelo.tocha(o + Vector2(750, 0))
+	mapa.piso(area, Color("#b9b0c9"), Color("#a79dba"), false)
+	mapa.tocha(o + Vector2(250, 0))
+	mapa.tocha(o + Vector2(750, 0))
 	cercado = area.grow(-RECUO)
 	_montar_borda()
 
@@ -46,7 +46,7 @@ func montar() -> void:
 		var c := Caixa.new()
 		c.position = p
 		c.inicio = p
-		castelo.no_mundo(c)
+		mapa.no_mundo(c)
 		caixas.append(c)
 
 
@@ -89,11 +89,11 @@ func checar(p: Vector2) -> void:
 			c.travar(estado.marcas[m])
 			marcas[m].modulate = Color(1, 1, 1, 1)
 			(get_node("LuzMarca%d" % m) as Sprite2D).modulate = Color(0.7, 1.0, 0.6, 0.6)
-			castelo.tocar("encaixe")
-			castelo.progresso_feito()
-			castelo.marco("caixa", 0.5)
+			mapa.tocar("encaixe")
+			mapa.progresso_feito()
+			mapa.marco("caixa", 0.5)
 			if estado.completo():
-				castelo.marco("caixas", 1.0)
+				mapa.marco("caixas", 1.0)
 				terminar()
 			continue
 		# rede de segurança (só com a criança aqui: fora, a caixa fica onde ela deixou)
@@ -104,11 +104,11 @@ func checar(p: Vector2) -> void:
 		else:
 			_parada[i] = 0.0
 		_ultima[i] = c.global_position
-		if _parada[i] > ESPERA_SOCORRO and castelo.tempo_sem_progresso() > ESPERA_SOCORRO \
+		if _parada[i] > ESPERA_SOCORRO and mapa.tempo_sem_progresso() > ESPERA_SOCORRO \
 				and c.global_position.distance_to(c.inicio) > 10.0:
 			_parada[i] = 0.0
 			c.voltar_pro_inicio()
-			castelo.tocar("brilho")
+			mapa.tocar("brilho")
 
 
 ## A caixa livre e a marca livre que formam o par mais perto.
@@ -133,7 +133,7 @@ func alvo() -> Vector2:
 	if par.is_empty():
 		return area.get_center()
 	var c := caixas[par[0]].global_position
-	if castelo.jogador.global_position.distance_to(c) < 160.0:
+	if mapa.jogador.global_position.distance_to(c) < 160.0:
 		return estado.marcas[par[1]]
 	return c
 
@@ -145,11 +145,11 @@ func alvo_auto() -> Vector2:
 	_dbg += get_physics_process_delta_time()
 	if _dbg > 1.5 and OS.get_cmdline_user_args().has("--depurar"):
 		_dbg = 0.0
-		print("DBG p=%s c0=%s c1=%s borda=%d" % [castelo.jogador.global_position.round(), caixas[0].global_position.round(), caixas[1].global_position.round(), _auto_borda])
+		print("DBG p=%s c0=%s c1=%s borda=%d" % [mapa.jogador.global_position.round(), caixas[0].global_position.round(), caixas[1].global_position.round(), _auto_borda])
 	var par := _par()
 	if par.is_empty():
 		return area.get_center()
-	var p := castelo.jogador.global_position
+	var p := mapa.jogador.global_position
 	# uma vez: empurra a caixa 2 contra a borda e confere que dá pra passar por trás
 	if _auto_borda < 3:
 		var c2 := caixas[1]
@@ -168,7 +168,7 @@ func alvo_auto() -> Vector2:
 				var atras := Vector2(c2.global_position.x, (cercado.end.y + area.end.y) * 0.5)
 				if p.distance_to(atras) < 30.0:
 					_auto_borda = 3
-					castelo.marco("borda", 0.2)
+					mapa.marco("borda", 0.2)
 				return _contornar(c2.global_position, atras, Vector2(0, -1))
 	var c := caixas[par[0]].global_position
 	var d: Vector2 = estado.marcas[par[1]] - c
@@ -182,7 +182,7 @@ func alvo_auto() -> Vector2:
 ## Pra chegar em `ponto` atrás da caixa sem empurrá-la: vai pro lado dela,
 ## desce até a linha de trás e só então entra atrás.
 func _contornar(caixa: Vector2, ponto: Vector2, eixo: Vector2) -> Vector2:
-	var p := castelo.jogador.global_position
+	var p := mapa.jogador.global_position
 	var lado := Vector2(-eixo.y, eixo.x)
 	var rel := p - caixa
 	if rel.dot(eixo) <= -100.0:

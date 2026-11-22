@@ -7,7 +7,7 @@ var falhou := 0
 
 
 func _initialize() -> void:
-	for t: String in ["teste_progresso_por_fase"]:
+	for t: String in ["teste_progresso_por_fase", "teste_estado_salas"]:
 		if call(t) != true:
 			falhou += 1
 			push_error("FALHOU %s: não terminou (erro em tempo de execução?)" % t)
@@ -48,4 +48,24 @@ func teste_progresso_por_fase() -> bool:
 	igual(velho.alcancou("castelo"), true, "formato antigo conta como castelo alcançado")
 	velho.apagar()
 	igual(classe.new(caminho).alcancou("castelo"), false, "apagar zera")
+	return true
+
+
+func teste_estado_salas() -> bool:
+	var classe = _classe("estado_salas")
+	var salas: Array[String] = ["a", "b"]
+	var e = classe.new(salas, {"a": "verde"}, {"b": "verde", "c": "b"})
+	igual(e.pode_abrir("b"), false, "porta b sem chave")
+	igual(e.concluir("a"), "verde", "sala a dá chave verde")
+	igual(e.tentar_abrir("b"), true, "chave verde abre b")
+	igual(e.abre_por_sala("c"), true, "porta c abre por sala (não é cor)")
+	igual(e.abre_por_sala("b"), false, "porta b abre por chave")
+	igual(e.cor_da_porta("b"), "verde", "cor da porta b")
+	igual(e.pode_abrir("c"), false, "c fechada até b terminar")
+	igual(e.todas_salas(), false, "falta b")
+	e.concluir("b")
+	igual(e.pode_abrir("c"), true, "b terminou: c pode abrir")
+	igual(e.todas_salas(), true, "a e b feitas")
+	var vazio: Array[String] = []
+	igual(classe.new(vazio, {}, {}).todas_salas(), true, "sem salas = todas feitas")
 	return true

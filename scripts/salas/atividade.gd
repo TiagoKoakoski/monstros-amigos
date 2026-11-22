@@ -1,6 +1,6 @@
 class_name Atividade
 extends Node2D
-## Base de cada sala do castelo. A sala monta suas coisas em montar(), olha a
+## Base de cada sala de uma fase de salas (castelo, laboratório). A sala monta suas coisas em montar(), olha a
 ## criança em checar() e diz pro vaga-lume (alvo) e pro piloto automático
 ## (alvo_auto) para onde ir. Quando termina, chama terminar().
 
@@ -9,16 +9,16 @@ signal concluida(id: String)
 var id := ""
 ## Retângulo do chão da sala, em coordenadas do mundo.
 var area := Rect2()
-var castelo: Castelo
+var mapa: FaseDeSalas
 var _terminada := false
 
 
-func configurar(p_castelo: Castelo, p_area: Rect2) -> void:
-	castelo = p_castelo
+func configurar(p_mapa: FaseDeSalas, p_area: Rect2) -> void:
+	mapa = p_mapa
 	area = p_area
 
 
-## Cria as coisas da sala. O que tem altura vai em castelo.no_mundo().
+## Cria as coisas da sala. O que tem altura vai em mapa.no_mundo().
 func montar() -> void:
 	pass
 

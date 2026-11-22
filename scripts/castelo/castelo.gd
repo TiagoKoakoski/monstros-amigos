@@ -1,5 +1,5 @@
 class_name Castelo
-extends Fase
+extends FaseDeSalas
 ## Fase 2: dentro do castelo. Um salão no meio e salas em volta, cada uma com
 ## uma brincadeira. Chaves coloridas abrem as portas trancadas.
 ##
@@ -11,8 +11,6 @@ extends Fase
 
 const W := 3600.0
 const H := 2900.0
-const PAREDE := Color("#3d3266")
-const FACE := Color("#5a4b8a")
 
 const SALAO := Rect2(1200, 1000, 1200, 900)
 const AREAS := {
@@ -39,219 +37,48 @@ const PAREDES := [
 	Rect2(0, 1900, 500, 100), Rect2(700, 1900, 2900, 100),
 	Rect2(0, 2800, 1200, 100), Rect2(1100, 2000, 2500, 900),
 ]
-const ORDEM := ["cozinha", "musica", "biblioteca", "caixas", "quarto"]
+const ORDEM: Array[String] = ["cozinha", "musica", "biblioteca", "caixas", "quarto"]
 const CORES_PORTA := {"biblioteca": Color("#4aa3ff"), "caixas": Color("#ff6f91"), "quarto": Color("#ffd23f")}
 
-var estado: EstadoCastelo
-var atividades: Dictionary[String, Atividade] = {}
-var portas: Dictionary[String, Porta] = {}
-var chaveiro: Chaveiro
 
-var _auto_parado_feito := false
-## chão de todas as salas fica aqui embaixo de tudo
-var _pisos: Node2D
-
-
-func montar() -> void:
+func configurar_mapa() -> void:
 	largura = W
 	altura = H
 	inicio = Vector2(1800, 1760)
 	espera_guia = 9.0
 	musica_inicial = "res://sons/musica_castelo.wav"
 	zoom_abertura = 0.62
+	salao = SALAO
+	areas = AREAS
+	vaos = VAOS
+	paredes = PAREDES
+	ordem = ORDEM
+	cores_porta = CORES_PORTA
+	cor_fundo = Color("#2a2357")
+	cor_parede = Color("#3d3266")
+	cor_face = Color("#5a4b8a")
 	estado = EstadoCastelo.new()
 	Jogo.progresso.marcar_castelo_aberto()  # chegou aqui: a porta fica aberta nas próximas
-	for nome: String in ["porta", "chave", "fechadura"]:
-		carregar_som(nome)
-
-	var fundo := Polygon2D.new()
-	fundo.polygon = _ret(Rect2(0, 0, W, H))
-	fundo.color = Color("#2a2357")
-	add_child(fundo)
-	_pisos = Node2D.new()
-	add_child(_pisos)
-	piso(SALAO, Color("#d9c7a4"), Color("#cbb68f"), false)
-	_tapete(SALAO.get_center() + Vector2(0, 40), Vector2(760, 460))
-	for id: String in ORDEM:
-		_criar_atividade(id)
-	_paredes()
-	add_child(_mundo)
-	_decorar_salao()
-	for id: String in ["biblioteca", "caixas", "quarto"]:
-		var porta := Porta.new()
-		add_child(porta)
-		porta.configurar(id, CORES_PORTA[id], VAOS[id], _mundo)
-		portas[id] = porta
-	_porta_de_entrada()
-
-	var ui := interface()
-	chaveiro = Chaveiro.new()
-	ui.add_child(chaveiro)
 
 
-func _criar_atividade(id: String) -> void:
-	var a: Atividade
+func nova_atividade(id: String) -> Atividade:
 	match id:
 		"cozinha":
-			a = Cozinha.new()
+			return Cozinha.new()
 		"musica":
-			a = Musica.new()
+			return Musica.new()
 		"biblioteca":
-			a = Biblioteca.new()
+			return Biblioteca.new()
 		"caixas":
-			a = CorredorCaixas.new()
+			return CorredorCaixas.new()
 		"quarto":
-			a = Quarto.new()
-	a.configurar(self, AREAS[id])
-	add_child(a)
-	a.montar()
-	a.concluida.connect(_ao_concluir)
-	atividades[id] = a
+			return Quarto.new()
+	return null
 
 
-# ---------------------------------------------------------------- serviços pras salas
-
-func no_mundo(no: Node2D) -> void:
-	_mundo.add_child(no)
-
-
-func mao_vazia() -> bool:
-	return estado.carregando == ""
-
-
-func dar_na_mao(item: ItemPerdido, id: String) -> bool:
-	if not estado.pegar(id):
-		return false
-	item.ao_pegar()
-	jogador.segurar(item)
-	tocar("pegar")
-	progresso_feito()
-	return true
-
-
-func tirar_da_mao() -> Node2D:
-	estado.soltar()
-	return jogador.soltar_na_mao()
-
-
-func sala_do_jogador() -> String:
-	for id: String in AREAS:
-		if (AREAS[id] as Rect2).has_point(jogador.global_position):
-			return id
-	return ""
-
-
-## Posição na tela de algo no mundo (pra chave voar até o chaveiro).
-func na_tela(p: Vector2) -> Vector2:
-	return get_viewport().get_canvas_transform() * p
-
-
-func piso(r: Rect2, cor: Color, linha: Color, xadrez: bool) -> void:
-	var chao := Polygon2D.new()
-	chao.polygon = _ret(r)
-	chao.color = cor
-	_pisos.add_child(chao)
-	var lado := 125.0
-	if xadrez:
-		var y := r.position.y
-		var j := 0
-		while y < r.end.y:
-			var x := r.position.x + (lado if j % 2 == 1 else 0.0)
-			while x < r.end.x:
-				var q := Polygon2D.new()
-				q.polygon = _ret(Rect2(x, y, minf(lado, r.end.x - x), minf(lado, r.end.y - y)))
-				q.color = linha
-				_pisos.add_child(q)
-				x += lado * 2.0
-			y += lado
-			j += 1
-		return
-	var x2 := r.position.x + lado
-	while x2 < r.end.x:
-		_linha(Vector2(x2, r.position.y), Vector2(x2, r.end.y), linha)
-		x2 += lado * 1.6
-	var y2 := r.position.y + lado
-	while y2 < r.end.y:
-		_linha(Vector2(r.position.x, y2), Vector2(r.end.x, y2), linha)
-		y2 += lado
-
-
-## Móvel com os pés em `pos` e uma colisão retangular de `base` em volta deles.
-func enfeite(nome: String, pos: Vector2, base: Vector2) -> Sprite2D:
-	var s := Visual.sprite_em_pe(load("res://arte/%s.svg" % nome) as Texture2D)
-	s.position = pos
-	_mundo.add_child(s)
-	if base != Vector2.ZERO:
-		var corpo := StaticBody2D.new()
-		var forma := CollisionShape2D.new()
-		var ret := RectangleShape2D.new()
-		ret.size = base
-		forma.shape = ret
-		forma.position = pos - Vector2(0, base.y * 0.5)
-		corpo.add_child(forma)
-		add_child(corpo)
-	return s
-
-
-## Tocha presa na parede de cima de uma sala (y = linha de baixo da parede).
-func tocha(pos: Vector2) -> void:
-	var luz := Visual.luz(Color(1.0, 0.8, 0.45, 0.4), 560.0)
-	luz.position = pos + Vector2(0, 40)
-	luz.scale.y *= 0.7
-	add_child(luz)
-	var s := Visual.sprite_em_pe(load("res://arte/tocha.svg") as Texture2D)
-	s.position = pos + Vector2(0, 10)
-	s.z_index = 1
-	add_child(s)
-
-
-func _linha(a: Vector2, b: Vector2, cor: Color) -> void:
-	var l := Line2D.new()
-	l.points = PackedVector2Array([a, b])
-	l.width = 4.0
-	l.default_color = cor
-	_pisos.add_child(l)
-
-
-func _ret(r: Rect2) -> PackedVector2Array:
-	return PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)])
-
-
-func _tapete(centro: Vector2, tamanho: Vector2) -> void:
-	for camada: Array in [[1.0, Color("#b0425e")], [0.86, Color("#d9577a")], [0.6, Color("#e9a23b")]]:
-		var p := Polygon2D.new()
-		var pts := PackedVector2Array()
-		for i in 40:
-			var a := TAU * i / 40.0
-			pts.append(centro + Vector2(cos(a) * tamanho.x * 0.5, sin(a) * tamanho.y * 0.5) * camada[0])
-		p.polygon = pts
-		p.color = camada[1]
-		_pisos.add_child(p)
-
-
-func _paredes() -> void:
-	var corpo := StaticBody2D.new()
-	add_child(corpo)
-	for r: Rect2 in PAREDES:
-		var p := Polygon2D.new()
-		p.polygon = _ret(r)
-		p.color = PAREDE
-		add_child(p)
-		# face clara embaixo das paredes horizontais: dá a ideia de altura
-		if r.size.x > r.size.y:
-			var face := Polygon2D.new()
-			face.polygon = _ret(Rect2(r.position.x, r.end.y - 34, r.size.x, 34))
-			face.color = FACE
-			add_child(face)
-		var forma := CollisionShape2D.new()
-		var ret := RectangleShape2D.new()
-		ret.size = r.size
-		forma.shape = ret
-		forma.position = r.get_center()
-		corpo.add_child(forma)
-
-
-func _decorar_salao() -> void:
+func decorar() -> void:
+	piso(SALAO, Color("#d9c7a4"), Color("#cbb68f"), false)
+	_tapete(SALAO.get_center() + Vector2(0, 40), Vector2(760, 460))
 	for x: float in [1400.0, 2200.0]:
 		tocha(Vector2(x, 1000))
 	var abobora := load("res://arte/abobora.svg") as Texture2D
@@ -264,6 +91,19 @@ func _decorar_salao() -> void:
 		luz.position = pos
 		luz.scale.y *= 0.6
 		add_child(luz)
+	_porta_de_entrada()
+
+
+func _tapete(centro: Vector2, tamanho: Vector2) -> void:
+	for camada: Array in [[1.0, Color("#b0425e")], [0.86, Color("#d9577a")], [0.6, Color("#e9a23b")]]:
+		var p := Polygon2D.new()
+		var pts := PackedVector2Array()
+		for i in 40:
+			var a := TAU * i / 40.0
+			pts.append(centro + Vector2(cos(a) * tamanho.x * 0.5, sin(a) * tamanho.y * 0.5) * camada[0])
+		p.polygon = pts
+		p.color = camada[1]
+		no_chao(p)
 
 
 ## A porta por onde ele entrou: fecha atrás dele (é só enfeite por dentro).
@@ -277,59 +117,8 @@ func _porta_de_entrada() -> void:
 	t.tween_callback(func() -> void: tocar("porta"))
 
 
-# ---------------------------------------------------------------- partida
-
-func checar_interacoes() -> void:
-	if em_festa:
-		return
-	var p := jogador.global_position
-	for a: Atividade in atividades.values():
-		a.checar(p)
-	for id: String in portas:
-		var porta := portas[id]
-		if porta.aberta:
-			continue
-		porta.brilhar(estado.pode_abrir(id))
-		if p.distance_to(porta.ponto) > 160.0:
-			continue
-		if estado.tentar_abrir(id):
-			_abrir_porta(id)
-		elif id != "quarto" and porta.balancar():  # o quarto abre pelas caixas, não por chave
-			tocar("fechadura")
-			marco("trancada", 0.3)
-
-
-func _abrir_porta(id: String) -> void:
-	var porta := portas[id]
-	var cor: String = EstadoCastelo.PORTAS[id]
-	chaveiro.usar(cor)
-	porta.abrir()
-	tocar("porta")
-	progresso_feito()
-	marco("abriu_" + id, 0.8)
-
-
-func _ao_concluir(id: String) -> void:
-	var chave := estado.concluir(id)
-	progresso_feito()
-	if chave != "":
-		var de := atividades[id].monstro()
-		var origem := na_tela(de.global_position + Vector2(0, -de.altura())) if de else Vector2(960, 540)
-		var t := create_tween()
-		t.tween_interval(1.0)
-		t.tween_callback(func() -> void:
-			chaveiro.ganhar(chave, origem)
-			tocar("chave"))
-		marco("chave_" + chave, 2.2)
-	if id == "caixas" and estado.tentar_abrir("quarto"):
-		portas["quarto"].abrir()
-		tocar("porta")
-	if estado.todas_salas():
-		_festa_final()
-
-
 ## Todos ajudados: os monstros e os filhotes vêm pro salão e dançam.
-func _festa_final() -> void:
+func festa_final() -> void:
 	var lugares: Array[Vector2] = [Vector2(-380, -120), Vector2(-130, -180), Vector2(130, -180), Vector2(380, -120)]
 	var i := 0
 	for id: String in ORDEM:
@@ -356,44 +145,8 @@ func ao_recomecar() -> void:
 	Jogo.trocar_fase(Jogo.JARDIM)
 
 
-## Próxima sala a fazer: a primeira (na ordem) que não terminou e que já dá pra entrar.
-func proxima_atividade() -> String:
-	for id: String in ORDEM:
-		if not atividades.has(id) or atividades[id].terminada():
-			continue
-		if not portas.has(id) or portas[id].aberta or estado.pode_abrir(id):
-			return id
-	return ""
-
-
-func alvo_atual() -> Vector2:
-	var na_mao := estado.carregando
-	var destino := ""
-	if na_mao != "":
-		for id: String in atividades:
-			if atividades[id].dona_de(na_mao):
-				destino = id
-	if destino == "":
-		var aqui := sala_do_jogador()
-		if aqui != "" and atividades.has(aqui) and not atividades[aqui].terminada():
-			destino = aqui
-		else:
-			destino = proxima_atividade()
-	if destino == "":
-		return SALAO.get_center()
-	return _rota(destino, atividades[destino].alvo())
-
-
-func alvo_auto() -> Vector2:
-	var destino := sala_do_jogador()
-	if destino == "" or not atividades.has(destino) or atividades[destino].terminada() or estado.carregando != "":
-		return alvo_atual()
-	return atividades[destino].alvo_auto()
-
-
-## Caminho até `alvo` dentro da sala `destino`: se a criança está em outra
-## sala, primeiro sai pela porta dela; o quarto só se chega pelo corredor.
-func _rota(destino: String, alvo: Vector2) -> Vector2:
+## O quarto só se chega pelo corredor das caixas.
+func rota(destino: String, alvo: Vector2) -> Vector2:
 	var aqui := sala_do_jogador()
 	if aqui == destino:
 		return alvo
@@ -407,41 +160,13 @@ func _rota(destino: String, alvo: Vector2) -> Vector2:
 	return _passar(VAOS[destino], AREAS[destino])
 
 
-## Um ponto logo depois do vão, já dentro de `lado` (pra atravessar a porta).
-func _passar(vao: Rect2, lado: Rect2) -> Vector2:
-	var c := vao.get_center()
-	var dentro := lado.get_center() - c
-	if vao.size.x < vao.size.y:
-		dentro = Vector2(signf(dentro.x), 0)
-	else:
-		dentro = Vector2(0, signf(dentro.y))
-	return c + dentro * 140.0
-
-
 # ---------------------------------------------------------------- teste automático
 
 func iniciar_auto() -> void:
 	print("AUTOPLAY: começando no castelo")
-	for a: String in OS.get_cmdline_user_args():
-		if a.begins_with("--sala="):
-			_pular_ate.call_deferred(a.split("=")[1])
-
-
-## Só pra testar uma sala: dá as salas anteriores por feitas e leva a criança
-## até a porta da sala pedida.
-func _pular_ate(sala: String) -> void:
-	for id: String in ORDEM:
-		if id == sala:
-			break
-		atividades[id].terminar()
-		for p: String in portas:
-			if estado.tentar_abrir(p):
-				portas[p].abrir()
-	_auto_parado_feito = true
-	_auto_marcos["trancada"] = true
-	_auto_marcos["guia"] = true
-	jogador.global_position = _passar(VAOS[sala], SALAO if sala != "quarto" else AREAS["caixas"])
-	print("AUTOPLAY: pulou até %s" % sala)
+	var sala := sala_pedida()
+	if sala != "":
+		_pular_ate.call_deferred(sala, SALAO if sala != "quarto" else AREAS["caixas"])
 
 
 func tempo_limite_auto() -> float:
@@ -454,36 +179,19 @@ func pilotar_auto(delta: float) -> Vector2:
 	if _tempo > 2.0:
 		marco("inicio_castelo", 0.0)
 	# fica parado até o vaga-lume aparecer (espera mais longa no castelo)
-	if not _auto_parado_feito:
-		if guia.ativo():
-			_auto_parado_feito = true
-		elif _tempo > espera_guia + 2.0:
-			falha_auto("o vaga-lume do castelo não apareceu depois de %ss parado" % espera_guia)
-			_auto_parado_feito = true
+	if esperar_guia_auto():
 		return Vector2.ZERO
 	# encosta uma vez de propósito na porta trancada da biblioteca
 	if not tem_marco("trancada") and not estado.porta_aberta("biblioteca"):
 		return andar_ate(portas["biblioteca"].ponto + Vector2(0, 110), delta)
 	var alvo := alvo_auto()
-	if OS.get_cmdline_user_args().has("--depurar") and int(_tempo * 60) % 90 == 0:
-		print("DBG castelo p=%s alvo=%s sala=%s prox=%s mao=%s" % [jogador.global_position.round(), alvo.round(), sala_do_jogador(), proxima_atividade(), estado.carregando])
+	depurar_auto(alvo)
 	return andar_ate(alvo, delta)
 
 
-func verificar_fim_auto() -> Array[String]:
-	var falhas: Array[String] = []
-	var lista: Array[String] = ["inicio_castelo", "guia", "trancada", "cozinha", "chave_azul", "nota_errada", "musica",
+func marcos_obrigatorios() -> Array[String]:
+	if sala_pedida() != "":
+		return ["festa_castelo", "pode_recomecar"]
+	return ["inicio_castelo", "guia", "trancada", "cozinha", "chave_azul", "nota_errada", "musica",
 		"chave_vermelha", "abriu_biblioteca", "velas", "biblioteca", "abriu_caixas", "borda", "caixas", "filhote",
 		"cama", "quarto", "festa_castelo", "pode_recomecar"]
-	for a: String in OS.get_cmdline_user_args():
-		if a.begins_with("--sala="):
-			lista = ["festa_castelo", "pode_recomecar"]
-	for obrigatorio: String in lista:
-		if not tem_marco(obrigatorio):
-			falhas.append("não passou pelo momento: %s" % obrigatorio)
-	for id: String in atividades:
-		if not atividades[id].terminada():
-			falhas.append("sala não terminada: %s" % id)
-	if _auto_travadas > 25:
-		falhas.append("travou %d vezes em obstáculos" % _auto_travadas)
-	return falhas

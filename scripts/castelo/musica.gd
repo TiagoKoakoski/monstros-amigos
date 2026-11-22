@@ -28,13 +28,13 @@ func montar() -> void:
 	id = "musica"
 	seq = EstadoSequencia.new(7 if Jogo.auto else randi(), [2, 3, 4] as Array[int], 4, OPOSTOS)
 	var o := area.position
-	castelo.piso(area, Color("#a88bd1"), Color("#9a7cc4"), false)
+	mapa.piso(area, Color("#a88bd1"), Color("#9a7cc4"), false)
 	_meio = o + Vector2(800, 520)
 	_tapete_roxo(_meio)
-	castelo.tocha(o + Vector2(300, 0))
-	castelo.tocha(o + Vector2(1200, 0))
+	mapa.tocha(o + Vector2(300, 0))
+	mapa.tocha(o + Vector2(1200, 0))
 	_orgao_pos = o + Vector2(260, 360)
-	castelo.enfeite("orgao", _orgao_pos, Vector2(340, 70))
+	mapa.enfeite("orgao", _orgao_pos, Vector2(340, 70))
 	# quadrado 2x2 com espaço no meio (em fila, ir de um a outro pisava no do meio)
 	var cantos: Array[Vector2] = [Vector2(-240, -180), Vector2(240, -180), Vector2(-240, 180), Vector2(240, 180)]
 	for i in 4:
@@ -43,8 +43,8 @@ func montar() -> void:
 		l.position = _meio + cantos[i]
 		add_child(l)
 		ladrilhos.append(l)
-		castelo.carregar_som("nota_%d" % i)
-	castelo.carregar_som("rodada")
+		mapa.carregar_som("nota_%d" % i)
+	mapa.carregar_som("rodada")
 	drac = Monstro.new()
 	drac.configurar("dracula", "", load("res://arte/dracula.svg") as Texture2D, load("res://arte/nota.svg") as Texture2D)
 	var notas: Array[Texture2D] = []
@@ -52,7 +52,7 @@ func montar() -> void:
 		notas.append(load("res://arte/nota.svg") as Texture2D)
 	drac.mostrar_varios(notas)
 	drac.position = o + Vector2(1310, 330)
-	castelo.no_mundo(drac)
+	mapa.no_mundo(drac)
 
 
 func _tapete_roxo(centro: Vector2) -> void:
@@ -88,29 +88,29 @@ func _pisou(cor: int) -> void:
 	var r := seq.pisar(cor)
 	ladrilhos[cor].acender(0.35)
 	if r == "erro":
-		castelo.tocar("hum")
+		mapa.tocar("hum")
 		drac.lembrar_pedido()
-		castelo.marco("nota_errada", 0.2)
+		mapa.marco("nota_errada", 0.2)
 		_auto_errou = true
 		fase = "pausa"
 		_tocar_demo(1.5)
 		return
-	castelo.tocar("nota_%d" % cor)
-	castelo.progresso_feito()
+	mapa.tocar("nota_%d" % cor)
+	mapa.progresso_feito()
 	if r == "rodada" or r == "fim":
 		drac.marcar_icone(seq.rodada - 1)
 		drac.voltinha()
 		var t := create_tween()
 		t.tween_interval(0.35)
-		t.tween_callback(func() -> void: castelo.tocar("rodada"))
-		castelo.marco("rodada_%d" % seq.rodada, 0.4)
+		t.tween_callback(func() -> void: mapa.tocar("rodada"))
+		mapa.marco("rodada_%d" % seq.rodada, 0.4)
 	if r == "rodada":
 		fase = "pausa"
 		_tocar_demo(1.8)
 	elif r == "fim":
 		fase = "fim"
 		drac.concluir()
-		castelo.marco("musica", 1.2)
+		mapa.marco("musica", 1.2)
 		terminar()
 
 
@@ -124,7 +124,7 @@ func _tocar_demo(atraso: float) -> void:
 	for cor: int in seq.sequencia():
 		_demo.tween_callback(func() -> void:
 			ladrilhos[cor].acender(NOTA)
-			castelo.tocar("nota_%d" % cor))
+			mapa.tocar("nota_%d" % cor))
 		_demo.tween_interval(NOTA + PAUSA_NOTA)
 	_demo.tween_callback(func() -> void: fase = "vez")
 
@@ -142,7 +142,7 @@ func alvo() -> Vector2:
 
 
 func alvo_auto() -> Vector2:
-	var p := castelo.jogador.global_position
+	var p := mapa.jogador.global_position
 	if fase == "esperando":
 		return _meio
 	if fase != "vez":

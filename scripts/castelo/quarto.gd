@@ -19,13 +19,13 @@ var _deitados := 0
 func montar() -> void:
 	id = "quarto"
 	estado = EstadoFilhotes.new(3)
-	castelo.carregar_som("filhote")
+	mapa.carregar_som("filhote")
 	var o := area.position
-	castelo.piso(area, Color("#e8c3d6"), Color("#dbb1c7"), false)
-	castelo.tocha(o + Vector2(200, 0))
-	castelo.tocha(o + Vector2(800, 0))
+	mapa.piso(area, Color("#e8c3d6"), Color("#dbb1c7"), false)
+	mapa.tocha(o + Vector2(200, 0))
+	mapa.tocha(o + Vector2(800, 0))
 	cama_pos = o + Vector2(760, 330)
-	castelo.enfeite("cama", cama_pos, Vector2.ZERO)
+	mapa.enfeite("cama", cama_pos, Vector2.ZERO)
 	for dx: float in [-90.0, 0.0, 90.0]:
 		_lugares.append(cama_pos + Vector2(dx, -60))
 
@@ -36,7 +36,7 @@ func montar() -> void:
 		desenhos.append(load("res://arte/filhote.svg") as Texture2D)
 	lobis.mostrar_varios(desenhos)
 	lobis.position = o + Vector2(330, 330)
-	castelo.no_mundo(lobis)
+	mapa.no_mundo(lobis)
 
 	# passeiam na parte de baixo do quarto, longe da cama
 	var zona := Rect2(o + Vector2(120, 430), Vector2(760, 250))
@@ -44,14 +44,14 @@ func montar() -> void:
 		var f := Filhote.new()
 		f.configurar(zona)
 		f.position = p
-		castelo.no_mundo(f)
+		mapa.no_mundo(f)
 		filhotes.append(f)
 
 
 func _physics_process(delta: float) -> void:
-	if castelo == null or castelo.jogador == null:
+	if mapa == null or mapa.jogador == null:
 		return
-	var p := castelo.jogador.global_position
+	var p := mapa.jogador.global_position
 	if _rastro.is_empty() or _rastro[-1].distance_to(p) > 6.0:
 		_rastro.append(p)
 		if _rastro.size() > 200:
@@ -74,9 +74,9 @@ func checar(p: Vector2) -> void:
 		if estado.estado(i) == "solto" and p.distance_to(filhotes[i].global_position) < RAIO_FILHOTE:
 			estado.pegar(i)
 			filhotes[i].pegar()
-			castelo.tocar("filhote")
-			castelo.progresso_feito()
-			castelo.marco("filhote", 0.5)
+			mapa.tocar("filhote")
+			mapa.progresso_feito()
+			mapa.marco("filhote", 0.5)
 	if not estado.seguidores().is_empty() and p.distance_to(cama_pos) < RAIO_CAMA:
 		var quem := estado.seguidores()
 		estado.deitar_seguidores()
@@ -84,12 +84,12 @@ func checar(p: Vector2) -> void:
 			filhotes[i].deitar(_lugares[_deitados])
 			lobis.marcar_icone(_deitados)
 			_deitados += 1
-		castelo.tocar("entregar")
-		castelo.progresso_feito()
-		castelo.marco("cama", 0.8)
+		mapa.tocar("entregar")
+		mapa.progresso_feito()
+		mapa.marco("cama", 0.8)
 		if estado.todos_na_cama():
 			lobis.concluir()
-			castelo.marco("quarto", 1.2)
+			mapa.marco("quarto", 1.2)
 			terminar()
 
 
@@ -105,7 +105,7 @@ func alvo() -> Vector2:
 	for i in filhotes.size():
 		if estado.estado(i) != "solto":
 			continue
-		var d := castelo.jogador.global_position.distance_to(filhotes[i].global_position)
+		var d := mapa.jogador.global_position.distance_to(filhotes[i].global_position)
 		if d < menor:
 			menor = d
 			melhor = filhotes[i].global_position
@@ -120,7 +120,7 @@ func alvo_auto() -> Vector2:
 			var menor := INF
 			for j in filhotes.size():
 				if estado.estado(j) == "solto":
-					var d := castelo.jogador.global_position.distance_to(filhotes[j].global_position)
+					var d := mapa.jogador.global_position.distance_to(filhotes[j].global_position)
 					if d < menor:
 						menor = d
 						melhor = filhotes[j].global_position
