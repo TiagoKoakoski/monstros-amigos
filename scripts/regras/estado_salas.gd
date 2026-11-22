@@ -7,7 +7,7 @@ extends RefCounted
 ## cor; qualquer outra coisa = o id de uma sala que precisa terminar (mesmo
 ## que ela não esteja em `salas`, como o corredor das caixas no castelo).
 
-const CORES_CHAVE: Array[String] = ["azul", "vermelha", "verde", "laranja"]
+const CORES_CHAVE: Array[String] = ["azul", "vermelha", "verde", "laranja", "roxa", "amarela", "rosa"]
 
 var carregando := ""
 var salas: Array[String] = []

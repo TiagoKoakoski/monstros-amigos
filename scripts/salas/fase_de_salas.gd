@@ -64,8 +64,15 @@ func rota(destino: String, alvo: Vector2) -> Vector2:
 	if aqui == destino:
 		return alvo
 	if aqui != "":
-		return _passar(vaos[aqui], salao)
+		return _saindo_de(aqui, _passar(vaos[aqui], salao))
 	return _passar(vaos[destino], areas[destino])
+
+
+## Ponto de saída da sala `aqui`, seguindo o caminho de dentro dela.
+func _saindo_de(aqui: String, saida: Vector2) -> Vector2:
+	if atividades.has(aqui):
+		return atividades[aqui].caminho_ate(saida)
+	return saida
 
 
 # ---------------------------------------------------------------- montagem

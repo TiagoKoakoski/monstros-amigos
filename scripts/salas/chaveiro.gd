@@ -4,7 +4,8 @@ extends Node2D
 
 const CANTO := Vector2(1780, 90)
 const PASSO := 150.0
-const CORES := {"azul": Color("#4aa3ff"), "vermelha": Color("#ff6f91"), "verde": Color("#5bd17a"), "laranja": Color("#ff9f43")}
+const CORES := {"azul": Color("#4aa3ff"), "vermelha": Color("#ff6f91"), "verde": Color("#5bd17a"), "laranja": Color("#ff9f43"),
+	"roxa": Color("#a66bff"), "amarela": Color("#ffd23f"), "rosa": Color("#ff9ecb")}
 
 var _chaves: Dictionary[String, Sprite2D] = {}
 

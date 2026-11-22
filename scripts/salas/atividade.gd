@@ -46,6 +46,12 @@ func monstro() -> Monstro:
 	return null
 
 
+## Próximo ponto pra andar dentro da sala rumo a `destino` (pra sair dela).
+## Salas abertas vão direto; o labirinto segue os corredores.
+func caminho_ate(destino: Vector2) -> Vector2:
+	return destino
+
+
 func terminada() -> bool:
 	return _terminada
 
