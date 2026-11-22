@@ -58,6 +58,7 @@ func _ready() -> void:
 	jogador = Jogador.new()
 	jogador.automatico = Jogo.auto
 	montar()
+	trocar_musica(musica_inicial)  # depois de montar(): a fase escolhe a música dela
 	if _mundo.get_parent() == null:
 		add_child(_mundo)
 	if jogador.get_parent() == null:
@@ -247,7 +248,6 @@ func _montar_audio() -> void:
 	add_child(_musica)
 	for nome: String in ["pegar", "entregar", "hum", "brilho"]:
 		carregar_som(nome)
-	trocar_musica.call_deferred(musica_inicial)
 
 
 func carregar_som(nome: String) -> void:

@@ -76,7 +76,7 @@ func _process(delta: float) -> void:
 		m.modulate.a = 0.75 + 0.25 * sin(Time.get_ticks_msec() * 0.005)
 
 
-func checar(_p: Vector2) -> void:
+func checar(p: Vector2) -> void:
 	if terminada():
 		return
 	var delta := get_physics_process_delta_time()
@@ -96,7 +96,9 @@ func checar(_p: Vector2) -> void:
 				castelo.marco("caixas", 1.0)
 				terminar()
 			continue
-		# rede de segurança
+		# rede de segurança (só com a criança aqui: fora, a caixa fica onde ela deixou)
+		if not contem(p):
+			continue
 		if c.global_position.distance_to(_ultima[i]) < 2.0:
 			_parada[i] += delta
 		else:

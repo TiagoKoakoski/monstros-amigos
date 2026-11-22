@@ -294,7 +294,7 @@ func checar_interacoes() -> void:
 			continue
 		if estado.tentar_abrir(id):
 			_abrir_porta(id)
-		elif porta.balancar():
+		elif id != "quarto" and porta.balancar():  # o quarto abre pelas caixas, não por chave
 			tocar("fechadura")
 			marco("trancada", 0.3)
 

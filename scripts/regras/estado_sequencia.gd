@@ -8,14 +8,16 @@ var _sequencias: Array = []  # Array de Array[int]
 var _indice := 0
 
 
-func _init(semente: int, tamanhos: Array[int] = [2, 3, 4], cores: int = 4) -> void:
+## `opostos`: cor -> cor que fica no canto oposto (ir de uma à outra no
+## direcional passa por cima de outro ladrilho); nunca ficam seguidas.
+func _init(semente: int, tamanhos: Array[int] = [2, 3, 4], cores: int = 4, opostos: Dictionary = {}) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = semente
 	for tam: int in tamanhos:
 		var seq: Array[int] = []
 		for i in tam:
 			var c := rng.randi_range(0, cores - 1)
-			while i > 0 and c == seq[i - 1]:
+			while i > 0 and (c == seq[i - 1] or opostos.get(seq[i - 1], -1) == c):
 				c = rng.randi_range(0, cores - 1)
 			seq.append(c)
 		_sequencias.append(seq)

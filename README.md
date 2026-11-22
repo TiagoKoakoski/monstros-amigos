@@ -66,7 +66,8 @@ No castelo:
 
 ```bash
 godot --headless --path . --script res://tests/teste_missao.gd       # regras do jardim (28 verificações)
-godot --headless --path . --script res://tests/teste_castelo.gd      # regras do castelo (67)
+godot --headless --path . --script res://tests/teste_castelo.gd      # regras do castelo (68)
+godot --headless --path . res://tests/teste_castelo_cena.tscn         # castelo montado: casos de controle real (6)
 godot --headless --path . --script res://tests/teste_controle_real.gd # controle 0 e 1 + teclado (17)
 godot --path . -- --autoplay --capturas=/tmp/fotos                     # joga o jogo inteiro sozinho e fotografa
 godot --path . -- --fase=castelo --autoplay                            # começa direto no castelo

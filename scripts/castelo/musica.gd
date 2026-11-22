@@ -7,6 +7,8 @@ extends Atividade
 const CORES: Array[Color] = [Color("#ff6f91"), Color("#4aa3ff"), Color("#ffd23f"), Color("#5bd17a")]
 const NOTA := 0.55
 const PAUSA_NOTA := 0.25
+## ladrilhos em cantos opostos do quadrado (0 e 3, 1 e 2)
+const OPOSTOS := {0: 3, 3: 0, 1: 2, 2: 1}
 
 var seq: EstadoSequencia
 var drac: Monstro
@@ -19,11 +21,12 @@ var _auto_errou := false
 var _demo: Tween
 ## meio dos 4 ladrilhos: dá pra chegar em qualquer um daqui sem pisar nos outros
 var _meio := Vector2.ZERO
+var _dentro := false
 
 
 func montar() -> void:
 	id = "musica"
-	seq = EstadoSequencia.new(7 if Jogo.auto else randi())
+	seq = EstadoSequencia.new(7 if Jogo.auto else randi(), [2, 3, 4] as Array[int], 4, OPOSTOS)
 	var o := area.position
 	castelo.piso(area, Color("#a88bd1"), Color("#9a7cc4"), false)
 	_meio = o + Vector2(800, 520)
@@ -69,8 +72,13 @@ func checar(p: Vector2) -> void:
 			agora = i
 	var entrou := agora != -1 and agora != _sobre
 	_sobre = agora
-	if fase == "esperando" and contem(p):
+	var chegou := contem(p) and not _dentro
+	_dentro = contem(p)
+	if fase == "esperando" and _dentro:
 		_tocar_demo(1.2)
+		return
+	if fase == "vez" and chegou:
+		_tocar_demo(1.0)  # voltou no meio da rodada: o Drácula lembra a sequência
 		return
 	if fase == "vez" and entrou:
 		_pisou(agora)
@@ -127,6 +135,8 @@ func monstro() -> Monstro:
 
 func alvo() -> Vector2:
 	if fase == "vez":
+		if _sobre == seq.proxima_cor():
+			return _meio  # já está em cima: precisa sair e entrar de novo
 		return ladrilhos[seq.proxima_cor()].global_position
 	return drac.global_position
 

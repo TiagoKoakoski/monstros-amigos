@@ -8,7 +8,7 @@ var falhou := 0
 
 func _initialize() -> void:
 	for t: String in ["teste_receita", "teste_sequencia_tamanhos", "teste_sequencia_erro_nao_regride",
-			"teste_sequencia_demo_e_reentrada", "teste_velas", "teste_caixas", "teste_filhotes",
+			"teste_sequencia_demo_e_reentrada", "teste_sequencia_sem_diagonal", "teste_velas", "teste_caixas", "teste_filhotes",
 			"teste_chaves_e_portas", "teste_mao_cheia_entre_salas", "teste_progresso"]:
 		if call(t) != true:
 			falhou += 1
@@ -109,6 +109,23 @@ func teste_sequencia_demo_e_reentrada() -> bool:
 	igual(s.rodada, 1, "na rodada 1 depois de 3 notas certas")
 	s.pisar((s.proxima_cor() + 2) % 4)
 	igual(s.rodada, 1, "erro no meio mantém rodada")
+	return true
+
+
+func teste_sequencia_sem_diagonal() -> bool:
+	# ladrilhos 2x2: 0 e 3, 1 e 2 ficam em cantos opostos — no direcional, ir
+	# de um ao outro passa por cima de outro ladrilho. Nunca seguidos.
+	var opostos := {0: 3, 3: 0, 1: 2, 2: 1}
+	var diagonal := false
+	for semente in 60:
+		var s = _classe("estado_sequencia").new(semente, [2, 3, 4] as Array[int], 4, opostos)
+		for rod in 3:
+			s.rodada = rod
+			var seq: Array[int] = s.sequencia()
+			for i in range(1, seq.size()):
+				if opostos[seq[i - 1]] == seq[i] or seq[i] == seq[i - 1]:
+					diagonal = true
+	igual(diagonal, false, "nunca duas cores em cantos opostos seguidas")
 	return true
 
 
