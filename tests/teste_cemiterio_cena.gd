@@ -21,7 +21,8 @@ func _rodar() -> void:
 	for t: String in ["teste_porta_fundos_fechada_sem_progresso", "teste_porta_fundos_aberta_com_progresso",
 			"teste_porta_fundos_fora_do_caminho", "teste_cemiterio_marca_progresso",
 			"teste_fantasminha_segue_pela_porta", "teste_laco_semente_agua_nao_cala_o_vagalume",
-			"teste_parado_no_poco_fica_com_a_agua"]:
+			"teste_parado_no_poco_fica_com_a_agua", "teste_vagalume_labirinto_nao_atravessa",
+			"teste_saida_do_labirinto_pelos_corredores"]:
 		if await call(t) != true:
 			falhou += 1
 			push_error("FALHOU %s: não terminou" % t)
@@ -149,5 +150,36 @@ func teste_parado_no_poco_fica_com_a_agua() -> bool:
 	h.checar(c.inicio)
 	h.checar(h.poco)
 	igual(c.estado.carregando, "", "saiu e voltou: devolve")
+	_fora(c)
+	return true
+
+
+func teste_vagalume_labirinto_nao_atravessa() -> bool:
+	var c := await _cena(Jogo.CEMITERIO) as Cemiterio
+	var lab := c.atividades["labirinto"] as Labirinto
+	var ruins := 0
+	for x in EstadoLabirinto.LARGURA:
+		for y in EstadoLabirinto.ALTURA:
+			var cel := Vector2i(x, y)
+			c.jogador.global_position = lab.centro(cel)
+			var alvo := lab.celula(lab.alvo())
+			var ok := alvo == cel if cel == EstadoLabirinto.CHAVE else lab.lab.livre(cel, alvo)
+			if not ok:
+				ruins += 1
+	igual(ruins, 0, "de toda célula, o vaga-lume aponta uma célula vizinha sem cerca no meio")
+	_fora(c)
+	return true
+
+
+func teste_saida_do_labirinto_pelos_corredores() -> bool:
+	var c := await _cena(Jogo.CEMITERIO) as Cemiterio
+	var lab := c.atividades["labirinto"] as Labirinto
+	c.jogador.global_position = lab.centro(EstadoLabirinto.CHAVE)
+	lab.checar(c.jogador.global_position)
+	igual(lab.terminada(), true, "pegou a chave")
+	var alvo := c.alvo_atual()
+	var prox := lab.celula(alvo)
+	igual(Cemiterio.AREAS["labirinto"].has_point(alvo), true, "saindo: o vaga-lume fica dentro do labirinto")
+	igual(lab.lab.livre(EstadoLabirinto.CHAVE, prox), true, "saindo: aponta a célula vizinha pelo corredor")
 	_fora(c)
 	return true

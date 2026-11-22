@@ -46,6 +46,12 @@ func monstro() -> Monstro:
 	return null
 
 
+## De onde a chave ganha sai voando (padrão: a cabeça do monstro da sala).
+func origem_da_chave() -> Vector2:
+	var m := monstro()
+	return m.global_position + Vector2(0, -m.altura()) if m else Vector2.INF
+
+
 ## Próximo ponto pra andar dentro da sala rumo a `destino` (pra sair dela).
 ## Salas abertas vão direto; o labirinto segue os corredores.
 func caminho_ate(destino: Vector2) -> Vector2:

@@ -8,7 +8,8 @@ var falhou := 0
 
 func _initialize() -> void:
 	for t: String in ["teste_chaves_novas", "teste_esconde_sorteio", "teste_esconde_achar_entregar",
-			"teste_horta_passos", "teste_horta_erros_nao_perdem", "teste_horta_proximo_passo"]:
+			"teste_horta_passos", "teste_horta_erros_nao_perdem", "teste_horta_proximo_passo",
+			"teste_labirinto_solucionavel", "teste_labirinto_proximo_vizinho", "teste_labirinto_paredes_fecham"]:
 		if call(t) != true:
 			falhou += 1
 			push_error("FALHOU %s: não terminou (erro em tempo de execução?)" % t)
@@ -152,4 +153,46 @@ func teste_horta_proximo_passo() -> bool:
 	for i in 3:
 		nova.usar(i, "semente")
 	igual(nova.proximo_passo("semente"), "sementes", "semente sem canteiro vazio: devolve no saco")
+	return true
+
+
+func _lab():
+	return _classe("estado_labirinto").padrao()
+
+
+func teste_labirinto_solucionavel() -> bool:
+	var l = _lab()
+	var c: Array = l.caminho(l.ENTRADA, l.CHAVE)
+	igual(c.is_empty(), false, "existe caminho da entrada até a chave")
+	igual(c[0], l.ENTRADA, "começa na entrada")
+	igual(c[-1], l.CHAVE, "termina na chave")
+	igual(l.becos() >= 2, true, "tem becos sem saída (%d)" % l.becos())
+	return true
+
+
+func teste_labirinto_proximo_vizinho() -> bool:
+	var l = _lab()
+	var ruins := 0
+	for x in l.LARGURA:
+		for y in l.ALTURA:
+			var de := Vector2i(x, y)
+			if de == l.CHAVE:
+				continue
+			var p: Vector2i = l.proximo(de, l.CHAVE)
+			if (p - de).abs().x + (p - de).abs().y != 1 or not l.livre(de, p):
+				ruins += 1
+	igual(ruins, 0, "de toda célula, o próximo passo é vizinho e sem cerca no meio")
+	igual(l.proximo(l.CHAVE, l.CHAVE), l.CHAVE, "na chave: fica")
+	return true
+
+
+func teste_labirinto_paredes_fecham() -> bool:
+	var l = _lab()
+	igual(l.livre(Vector2i(2, 0), Vector2i(3, 0)), false, "cerca entre (2,0) e (3,0)")
+	igual(l.livre(Vector2i(0, 0), Vector2i(1, 0)), true, "passagem entre (0,0) e (1,0)")
+	igual(l.livre(Vector2i(0, 0), Vector2i(0, 1)), false, "cerca entre (0,0) e (0,1)")
+	igual(l.livre(Vector2i(5, 0), Vector2i(6, 0)), false, "fora da grade: fechado")
+	# cada parede interna separa duas células sem passagem
+	for r: Rect2i in l.paredes():
+		igual(r.size.x > 0 and r.size.y > 0, true, "parede %s com tamanho" % r)
 	return true

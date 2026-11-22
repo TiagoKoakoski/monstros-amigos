@@ -34,7 +34,7 @@ const PAREDES := [
 	Rect2(2800, 1100, 1200, 100), Rect2(3900, 1100, 100, 1200), Rect2(2800, 2200, 1200, 100),
 ]
 ## cada área entra aqui quando fica pronta
-const ORDEM: Array[String] = ["lapides", "horta"]
+const ORDEM: Array[String] = ["lapides", "horta", "labirinto"]
 const CHAVE_DA_SALA := {"lapides": "roxa", "horta": "amarela", "labirinto": "rosa"}
 const PORTAS := {"horta": "roxa", "labirinto": "amarela", "arena": "rosa"}
 const CORES_PORTA := {"horta": Color("#a66bff"), "labirinto": Color("#ffd23f"), "arena": Color("#ff9ecb")}
@@ -72,6 +72,8 @@ func nova_atividade(id: String) -> Atividade:
 			return Lapides.new()
 		"horta":
 			return Horta.new()
+		"labirinto":
+			return Labirinto.new()
 	return null
 
 
@@ -164,4 +166,5 @@ func marcos_obrigatorios() -> Array[String]:
 	if sala_pedida() != "":
 		return ["festa_cemiterio", "pode_recomecar"]
 	return ["inicio_cemiterio", "guia", "vazio", "lapides", "chave_roxa", "abriu_horta", "hum_horta", "devolveu",
-		"horta", "chave_amarela", "festa_cemiterio", "pode_recomecar"]
+		"horta", "chave_amarela", "abriu_labirinto", "beco", "labirinto",
+		"chave_rosa", "festa_cemiterio", "pode_recomecar"]

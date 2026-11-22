@@ -287,8 +287,8 @@ func _ao_concluir(id: String) -> void:
 	var chave := estado.concluir(id)
 	progresso_feito()
 	if chave != "":
-		var de := atividades[id].monstro()
-		var origem := na_tela(de.global_position + Vector2(0, -de.altura())) if de else Vector2(960, 540)
+		var de := atividades[id].origem_da_chave()
+		var origem := na_tela(de) if de != Vector2.INF else Vector2(960, 540)
 		var t := create_tween()
 		t.tween_interval(1.0)
 		t.tween_callback(func() -> void:
