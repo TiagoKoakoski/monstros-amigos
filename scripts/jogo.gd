@@ -1,15 +1,17 @@
 extends Node
 ## Maestro do jogo (autoload "Jogo"): troca de fase com fade e guarda o
-## progresso que atravessa partidas (a porta do castelo aberta).
+## progresso que atravessa partidas (as fases já alcançadas).
 ##
 ## Argumentos (depois de "--"):
 ##   --autoplay            joga sozinho (teste) — usa um progresso de teste separado
 ##   --capturas=/pasta     salva fotos dos momentos do teste
 ##   --fase=castelo        começa direto no castelo
+##   --fase=laboratorio    começa direto no laboratório
 ##   --manter-progresso    não apaga o progresso de teste no começo
 
 const JARDIM := "res://scenes/jardim.tscn"
 const CASTELO := "res://scenes/castelo.tscn"
+const LABORATORIO := "res://scenes/laboratorio.tscn"
 const PROGRESSO_REAL := "user://progresso.cfg"
 const PROGRESSO_TESTE := "user://progresso_teste.cfg"
 
@@ -34,6 +36,8 @@ func _ready() -> void:
 			pasta_capturas = a.split("=", true, 1)[1]
 		if a == "--fase=castelo":
 			_fase_inicial = CASTELO
+		if a == "--fase=laboratorio":
+			_fase_inicial = LABORATORIO
 	progresso = Progresso.new(PROGRESSO_TESTE if auto else PROGRESSO_REAL)
 	if auto and not args.has("--manter-progresso"):
 		progresso.apagar()
