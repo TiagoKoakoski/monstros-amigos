@@ -127,6 +127,7 @@ def main() -> None:
 
     castelo(saida)
     laboratorio(saida)
+    cemiterio(saida)
 
 
 def ruido_madeira(dur: float, semente: int = 3) -> np.ndarray:
@@ -249,6 +250,61 @@ def laboratorio(saida: Path) -> None:
             ev.append(((c * 4 + k * 2) * col, b, 0.6, 0.7, 5.0))
             ev.append(((c * 4 + k * 2 + 1) * col, b[:-1] + "3", 0.4, 0.3, 7.0))
     salvar(normaliza(laco(ev, 32 * col), PICO * 0.7), saida / "musica_laboratorio.wav")
+
+
+def cemiterio(saida: Path) -> None:
+    """Sons da fase 4 (cemitério das abóboras)."""
+    # risadinha de fantasminha: "hi-hi-hi" agudo, descendo um pouquinho
+    hi = np.zeros(int(SR * 0.75))
+    for k, f in enumerate([1250, 1150, 1050]):
+        g = glissando(f, f * 1.15, 0.12, 14)
+        i = int(k * 0.2 * SR)
+        hi[i:i + len(g)] += g
+    salvar(normaliza(hi, PICO * 0.7), saida / "risadinha.wav")
+    # achei: "uhuu" subindo + sininho
+    achei = np.zeros(int(SR * 0.9))
+    g = glissando(500, 1100, 0.45, 4)
+    achei[: len(g)] += g
+    sq = sequencia(["E6", "G6", "C7"], 0.08, 0.5, decai=7)
+    achei[int(SR * 0.35): int(SR * 0.35) + len(sq)] += sq * 0.7
+    salvar(normaliza(achei, PICO * 0.8), saida / "achei.wav")
+    # horta
+    salvar(normaliza(ruido_madeira(0.35, 21) * 1.2 + 0.5 * sino(freq("C5"), 0.35, 10), PICO * 0.6), saida / "plantar.wav")
+    dur = 1.0
+    t = np.arange(int(SR * dur)) / SR
+    regar = ruido_suave(dur, 25, 23) * np.clip(t / 0.1, 0, 1) * np.clip((dur - t) / 0.3, 0, 1)
+    salvar(normaliza(regar, PICO * 0.5), saida / "regar.wav")
+    crescer = np.zeros(int(SR * 2.0))
+    g = glissando(200, 700, 1.6, 1.8)
+    crescer[: len(g)] += g * 0.6
+    sq = sequencia(["C5", "E5", "G5", "C6"], 0.4, 2.0, decai=3)
+    crescer[: len(sq)] += sq
+    salvar(normaliza(crescer, PICO * 0.75), saida / "crescer.wav")
+    salvar(normaliza(ruido_madeira(0.5, 25) * 1.6 + sequencia(["G4", "C5"], 0.12, 0.5, decai=6), PICO * 0.75), saida / "carroca.wav")
+    # pega-pega: risada grave e boba do Fantasmão
+    ho = np.zeros(int(SR * 1.0))
+    for k, f in enumerate([330, 300, 270]):
+        g = glissando(f, f * 0.8, 0.22, 7)
+        i = int(k * 0.26 * SR)
+        ho[i:i + len(g)] += g
+    salvar(normaliza(ho, PICO * 0.75), saida / "peguei.wav")
+    # música do cemitério: valsinha em Sol maior, 3/4, 112 bpm, caixinha de música
+    bpm = 112
+    sem = 60 / bpm
+    melodia = ["D5", "G5", "B5", "A5", "G5", "E5", "D5", None, "B4",
+               "C5", "E5", "G5", "F#5", "E5", "C5", "D5", None, None,
+               "D5", "G5", "B5", "D6", "C6", "A5", "B5", "G5", "E5",
+               "F#5", "A5", "D5", "G5", None, None, None, None, None]
+    baixo = ["G3", "G3", "C3", "D3", "G3", "E3", "C3", "D3", "G3", "E3", "D3", "G3"]  # um por compasso
+    ev = [(i * sem, n, 1.4, 0.85, 3.2) for i, n in enumerate(melodia) if n]
+    total = len(melodia) * sem
+    passo = total / len(baixo)
+    for c, b in enumerate(baixo):
+        ev.append((c * passo, b, 1.8, 0.55, 2.0))
+        acorde = b[:-1] + str(int(b[-1]) + 1)
+        ev.append((c * passo + sem, acorde, 0.6, 0.2, 5.0))
+        ev.append((c * passo + 2 * sem, acorde, 0.6, 0.2, 5.0))
+    salvar(normaliza(laco(ev, total), PICO * 0.7), saida / "musica_cemiterio.wav")
 
 
 if __name__ == "__main__":

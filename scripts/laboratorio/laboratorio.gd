@@ -9,6 +9,8 @@ extends FaseDeSalas
 ##              laranja
 ##                 |
 ##             [Formas]
+##
+## Na festa abre a porta dos fundos (parede de cima): sai pro cemitério.
 
 const W := 3800.0
 const H := 3000.0
@@ -41,9 +43,14 @@ const CORES_PORTA := {"canos": Color("#5bd17a"), "formas": Color("#ff9f43")}
 ## passa na frente dela, nunca escondida atrás
 const MAQUINA := Vector2(1900, 1250)
 const CABO := {"pocoes": 0, "canos": 1, "formas": 2}
+## porta dos fundos: pés na parede de cima, longe da escada e dos caminhos
+const PORTA_FUNDOS := Vector2(2300, 960)
 
 var maquina: Maquina
 var mumia: Monstro
+var porta_fundos: PortaFundos
+var _ir_pra_porta := false
+var _pela_porta := false
 
 
 func configurar_mapa() -> void:
@@ -66,7 +73,7 @@ func configurar_mapa() -> void:
 	# chegou aqui: o castelo e o alçapão ficam abertos nas próximas
 	Jogo.progresso.marcar("castelo")
 	Jogo.progresso.marcar("laboratorio")
-	for nome: String in ["alcapao", "maquina"]:
+	for nome: String in ["alcapao", "maquina", "porta"]:
 		carregar_som(nome)
 
 
@@ -93,6 +100,11 @@ func decorar() -> void:
 	maquina.montar(self, MAQUINA)
 	if atividades.has("formas"):
 		(atividades["formas"] as Formas)._mostrar()  # as lâmpadas da máquina copiam o painel
+	porta_fundos = PortaFundos.new()
+	add_child(porta_fundos)
+	porta_fundos.z_index = 1
+	# já esteve no cemitério: a porta fica aberta (atalho)
+	porta_fundos.configurar(Vector2(PORTA_FUNDOS.x, 900), PORTA_FUNDOS, Jogo.progresso.alcancou("cemiterio"))
 	mumia = Monstro.new()
 	mumia.configurar("mumia", "", load("res://arte/mumia.svg") as Texture2D, load("res://arte/engrenagem.svg") as Texture2D)
 	mumia.position = Vector2(2250, 1450)
@@ -137,12 +149,68 @@ func festa_final() -> void:
 		t.tween_property(m, "global_position", MAQUINA + lugares[i % lugares.size()], 1.8).set_trans(Tween.TRANS_SINE)
 		t.tween_callback(m.dancar)
 	mumia.concluir()
-	comecar_festa(MAQUINA + Vector2(0, -120), true)
+	comecar_festa(MAQUINA + Vector2(0, -120), false)
 	marco("festa_laboratorio", 4.0)
+	var t := create_tween()
+	t.tween_interval(5.0)
+	t.tween_callback(_abrir_porta_fundos)
+	t.tween_interval(2.4)
+	t.tween_callback(func() -> void:
+		(get_node("Interface/Chuva") as CPUParticles2D).emitting = false
+		_ir_pra_porta = true
+		_tempo_sem_progresso = espera_guia - 1.0  # vaga-lume aparece logo
+		seguir_jogador())
 
 
-func ao_recomecar() -> void:
-	Jogo.trocar_fase(Jogo.JARDIM)
+## A porta dos fundos abre e a Múmia passa por ela na frente (mostra o caminho).
+func _abrir_porta_fundos() -> void:
+	if not porta_fundos.aberta:
+		porta_fundos.abrir()
+		tocar("porta")
+	var t := create_tween()
+	t.tween_property(mumia, "global_position", PORTA_FUNDOS + Vector2(0, -20), 1.6).set_trans(Tween.TRANS_SINE)
+	t.tween_property(mumia, "scale", Vector2.ONE * 0.3, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	t.parallel().tween_property(mumia, "modulate:a", 0.0, 0.5)
+	marco("porta_fundos_aberta", 2.0)
+
+
+func guia_ligado() -> bool:
+	return not em_festa or _ir_pra_porta
+
+
+func alvo_atual() -> Vector2:
+	if _ir_pra_porta:
+		return _ate_a_porta()
+	return super()
+
+
+## Caminho até a porta dos fundos: se a festa pegou a criança numa sala, primeiro sai dela.
+func _ate_a_porta() -> Vector2:
+	var aqui := sala_do_jogador()
+	if aqui != "":
+		return _saindo_de(aqui, _passar(VAOS[aqui], SALAO))
+	return PORTA_FUNDOS
+
+
+func checar_interacoes() -> void:
+	if porta_fundos.perto(jogador.global_position):
+		_sair()
+		return
+	super()
+
+
+func _sair() -> void:
+	if _pela_porta:
+		return
+	_pela_porta = true
+	if Jogo.auto:
+		marco("porta_fundos")
+		var falhas := _auto_falhas + verificar_fim_auto()
+		if not falhas.is_empty() or sala_pedida() != "":
+			_sair_com(falhas)
+			return
+	tocar("porta")
+	Jogo.trocar_fase(Jogo.CEMITERIO)
 
 
 # ---------------------------------------------------------------- teste automático
@@ -160,7 +228,7 @@ func tempo_limite_auto() -> float:
 
 func pilotar_auto(delta: float) -> Vector2:
 	if em_festa:
-		return Vector2.ZERO
+		return andar_ate(_ate_a_porta(), delta) if _ir_pra_porta else Vector2.ZERO
 	if _tempo > 2.0:
 		marco("inicio_laboratorio", 0.0)
 	if esperar_guia_auto():
@@ -175,6 +243,7 @@ func pilotar_auto(delta: float) -> Vector2:
 
 func marcos_obrigatorios() -> Array[String]:
 	if sala_pedida() != "":
-		return ["festa_laboratorio", "pode_recomecar"]
+		return ["festa_laboratorio", "porta_fundos"]
 	return ["inicio_laboratorio", "guia", "trancada", "plop", "pocoes", "chave_verde", "abriu_canos", "armadilha", "canos",
-		"chave_laranja", "abriu_formas", "forma_errada", "formas", "festa_laboratorio", "pode_recomecar"]
+		"chave_laranja", "abriu_formas", "forma_errada", "formas", "festa_laboratorio", "porta_fundos_aberta",
+		"porta_fundos"]
