@@ -168,7 +168,9 @@ func _entrar_no_castelo() -> void:
 	if Jogo.auto:
 		marco("porta")
 		var falhas := _auto_falhas + verificar_fim_auto()
-		if not falhas.is_empty():
+		if not falhas.is_empty() or Jogo.marcos_globais.has("segunda_volta"):
+			if falhas.is_empty():
+				Jogo.marcos_globais["resumo"] = "jogo completo: jardim, castelo, festa, volta ao jardim com a porta aberta e entrada de novo"
 			_sair_com(falhas)
 			return
 	Jogo.progresso.marcar_castelo_aberto()
@@ -363,7 +365,7 @@ func _montar_vagalumes() -> void:
 # ---------------------------------------------------------------- teste automático
 
 func iniciar_auto() -> void:
-	if Jogo.marcos_globais.get("conferir_recomeco", "") == scene_file_path:
+	if Jogo.marcos_globais.has("conferir_recomeco"):
 		Jogo.marcos_globais.erase("conferir_recomeco")
 		_conferir_recomeco.call_deferred()
 		return
@@ -410,6 +412,9 @@ func verificar_fim_auto() -> Array[String]:
 	return falhas
 
 
+## Voltou da festa do castelo pelo botão A: o jardim tem que estar limpo e
+## com a porta do castelo já aberta. Depois joga o jardim de novo (com a
+## porta aberta desde o começo) até entrar pela porta.
 func _conferir_recomeco() -> void:
 	soltar_botao_auto()
 	var falhas: Array[String] = []
@@ -421,9 +426,13 @@ func _conferir_recomeco() -> void:
 		falhas.append("recomeçou sem os 4 itens no chão")
 	if em_festa:
 		falhas.append("recomeçou ainda em festa")
-	if falhas.is_empty():
-		print("AUTOPLAY: botão A na festa recomeçou o jogo limpo")
-		Jogo.marcos_globais["resumo"] = "partida completa e recomeço conferido"
-	for f: String in falhas:
-		falha_auto(f)
-	_sair_com(_auto_falhas)
+	if not porta_aberta or not Jogo.progresso.castelo_aberto():
+		falhas.append("voltou do castelo mas a porta do jardim não estava aberta")
+	if not falhas.is_empty():
+		for f: String in falhas:
+			falha_auto(f)
+		_sair_com(_auto_falhas)
+		return
+	print("AUTOPLAY: botão A na festa do castelo voltou pro jardim limpo, com a porta aberta")
+	Jogo.marcos_globais["segunda_volta"] = true
+	marco("jardim_de_novo", 0.5)

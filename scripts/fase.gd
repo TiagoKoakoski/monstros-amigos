@@ -380,7 +380,7 @@ func _apertar_jogar_de_novo() -> void:
 	if not falhas.is_empty():
 		_sair_com(falhas)
 		return
-	Jogo.marcos_globais["conferir_recomeco"] = scene_file_path
+	Jogo.marcos_globais["conferir_recomeco"] = true
 	_botao_real(true)
 	var espera := get_tree().create_timer(3.0)
 	espera.timeout.connect(func() -> void:

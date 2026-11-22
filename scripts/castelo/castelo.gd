@@ -60,6 +60,7 @@ func montar() -> void:
 	musica_inicial = "res://sons/musica_castelo.wav"
 	zoom_abertura = 0.62
 	estado = EstadoCastelo.new()
+	Jogo.progresso.marcar_castelo_aberto()  # chegou aqui: a porta fica aberta nas próximas
 	for nome: String in ["porta", "chave", "fechadura"]:
 		carregar_som(nome)
 
@@ -71,7 +72,7 @@ func montar() -> void:
 	add_child(_pisos)
 	piso(SALAO, Color("#d9c7a4"), Color("#cbb68f"), false)
 	_tapete(SALAO.get_center() + Vector2(0, 40), Vector2(760, 460))
-	for id: String in ["cozinha", "musica", "biblioteca", "caixas"]:
+	for id: String in ORDEM:
 		_criar_atividade(id)
 	_paredes()
 	add_child(_mundo)
@@ -99,6 +100,8 @@ func _criar_atividade(id: String) -> void:
 			a = Biblioteca.new()
 		"caixas":
 			a = CorredorCaixas.new()
+		"quarto":
+			a = Quarto.new()
 	a.configurar(self, AREAS[id])
 	add_child(a)
 	a.montar()
@@ -325,12 +328,28 @@ func _ao_concluir(id: String) -> void:
 		_festa_final()
 
 
+## Todos ajudados: os monstros e os filhotes vêm pro salão e dançam.
 func _festa_final() -> void:
-	for a: Atividade in atividades.values():
-		if a.monstro():
-			a.monstro().dancar()
-	comecar_festa(SALAO.get_center(), true)
-	marco("festa_castelo", 3.0)
+	var lugares: Array[Vector2] = [Vector2(-380, -120), Vector2(-130, -180), Vector2(130, -180), Vector2(380, -120)]
+	var i := 0
+	for id: String in ORDEM:
+		var m := atividades[id].monstro()
+		if m == null:
+			continue
+		var t := create_tween()
+		t.tween_interval(0.8 + i * 0.25)
+		t.tween_property(m, "global_position", SALAO.get_center() + lugares[i], 1.8).set_trans(Tween.TRANS_SINE)
+		t.tween_callback(m.dancar)
+		i += 1
+	var quarto := atividades["quarto"] as Quarto
+	for j in quarto.filhotes.size():
+		var f := quarto.filhotes[j]
+		var t := create_tween()
+		t.tween_interval(1.2 + j * 0.2)
+		t.tween_callback(f.acordar)
+		t.tween_property(f, "global_position", SALAO.get_center() + Vector2([-470.0, 470.0, -330.0][j], [200.0, 200.0, 330.0][j]), 1.8).set_trans(Tween.TRANS_SINE)
+	comecar_festa(SALAO.get_center() + Vector2(0, -60), true)
+	marco("festa_castelo", 4.0)
 
 
 func ao_recomecar() -> void:
@@ -382,7 +401,8 @@ func _rota(destino: String, alvo: Vector2) -> Vector2:
 		return _passar(VAOS["quarto"], AREAS["caixas"])
 	if aqui != "" and not (aqui == "caixas" and destino == "quarto"):
 		return _passar(VAOS[aqui], SALAO)
-	if destino == "quarto" and aqui != "caixas":
+	var no_vao_do_quarto := (VAOS["quarto"] as Rect2).grow(60.0).has_point(jogador.global_position)
+	if destino == "quarto" and aqui != "caixas" and not no_vao_do_quarto:
 		return _passar(VAOS["caixas"], AREAS["caixas"])
 	return _passar(VAOS[destino], AREAS[destino])
 
@@ -444,25 +464,21 @@ func pilotar_auto(delta: float) -> Vector2:
 	# encosta uma vez de propósito na porta trancada da biblioteca
 	if not tem_marco("trancada") and not estado.porta_aberta("biblioteca"):
 		return andar_ate(portas["biblioteca"].ponto + Vector2(0, 110), delta)
-	return andar_ate(alvo_auto(), delta)
-
-
-func depois_do_frame() -> void:
-	if not Jogo.auto or em_festa or _saindo:
-		return
-	# enquanto nem todas as salas existem: termina quando as que existem acabaram
-	if atividades.size() < ORDEM.size():
-		for a: Atividade in atividades.values():
-			if not a.terminada():
-				return
-		if not tem_marco("salas_prontas"):
-			marco("salas_prontas")
-			get_tree().create_timer(3.0).timeout.connect(sair_auto)
+	var alvo := alvo_auto()
+	if OS.get_cmdline_user_args().has("--depurar") and int(_tempo * 60) % 90 == 0:
+		print("DBG castelo p=%s alvo=%s sala=%s prox=%s mao=%s" % [jogador.global_position.round(), alvo.round(), sala_do_jogador(), proxima_atividade(), estado.carregando])
+	return andar_ate(alvo, delta)
 
 
 func verificar_fim_auto() -> Array[String]:
 	var falhas: Array[String] = []
-	for obrigatorio: String in ["inicio_castelo", "guia", "trancada"]:
+	var lista: Array[String] = ["inicio_castelo", "guia", "trancada", "cozinha", "chave_azul", "nota_errada", "musica",
+		"chave_vermelha", "abriu_biblioteca", "velas", "biblioteca", "abriu_caixas", "borda", "caixas", "filhote",
+		"cama", "quarto", "festa_castelo", "pode_recomecar"]
+	for a: String in OS.get_cmdline_user_args():
+		if a.begins_with("--sala="):
+			lista = ["festa_castelo", "pode_recomecar"]
+	for obrigatorio: String in lista:
 		if not tem_marco(obrigatorio):
 			falhas.append("não passou pelo momento: %s" % obrigatorio)
 	for id: String in atividades:
