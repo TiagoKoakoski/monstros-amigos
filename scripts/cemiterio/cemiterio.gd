@@ -34,7 +34,7 @@ const PAREDES := [
 	Rect2(2800, 1100, 1200, 100), Rect2(3900, 1100, 100, 1200), Rect2(2800, 2200, 1200, 100),
 ]
 ## cada área entra aqui quando fica pronta
-const ORDEM: Array[String] = ["lapides", "horta", "labirinto"]
+const ORDEM: Array[String] = ["lapides", "horta", "labirinto", "arena"]
 const CHAVE_DA_SALA := {"lapides": "roxa", "horta": "amarela", "labirinto": "rosa"}
 const PORTAS := {"horta": "roxa", "labirinto": "amarela", "arena": "rosa"}
 const CORES_PORTA := {"horta": Color("#a66bff"), "labirinto": Color("#ffd23f"), "arena": Color("#ff9ecb")}
@@ -74,6 +74,8 @@ func nova_atividade(id: String) -> Atividade:
 			return Horta.new()
 		"labirinto":
 			return Labirinto.new()
+		"arena":
+			return Arena.new()
 	return null
 
 
@@ -121,9 +123,12 @@ func festa_final() -> void:
 		t.tween_interval(0.8 + i * 0.25)
 		t.tween_property(m, "global_position", SALAO.get_center() + lugares[i % lugares.size()], 1.8).set_trans(Tween.TRANS_SINE)
 		t.tween_callback(m.dancar)
-	# os fantasminhas vêm junto e dançam em volta
-	if atividades.has("lapides"):
-		var filhos := (atividades["lapides"] as Lapides).convidados()
+	# os fantasminhas e o Fantasmão vêm junto e dançam em volta
+	var filhos: Array[Node2D] = []
+	for id: String in ordem:
+		if atividades[id].has_method("convidados"):
+			filhos.append_array(atividades[id].call("convidados"))
+	if not filhos.is_empty():
 		for j in filhos.size():
 			var a := TAU * j / filhos.size()
 			var t := create_tween()
@@ -167,4 +172,5 @@ func marcos_obrigatorios() -> Array[String]:
 		return ["festa_cemiterio", "pode_recomecar"]
 	return ["inicio_cemiterio", "guia", "vazio", "lapides", "chave_roxa", "abriu_horta", "hum_horta", "devolveu",
 		"horta", "chave_amarela", "abriu_labirinto", "beco", "labirinto",
-		"chave_rosa", "festa_cemiterio", "pode_recomecar"]
+		"chave_rosa", "abriu_arena", "pegou_1", "pegou_2", "pegou_3", "arena",
+		"festa_cemiterio", "pode_recomecar"]

@@ -22,7 +22,8 @@ func _rodar() -> void:
 			"teste_porta_fundos_fora_do_caminho", "teste_cemiterio_marca_progresso",
 			"teste_fantasminha_segue_pela_porta", "teste_laco_semente_agua_nao_cala_o_vagalume",
 			"teste_parado_no_poco_fica_com_a_agua", "teste_vagalume_labirinto_nao_atravessa",
-			"teste_saida_do_labirinto_pelos_corredores"]:
+			"teste_saida_do_labirinto_pelos_corredores", "teste_fantasmao_fica_na_arena", "teste_fantasmao_cansa",
+			"teste_pegada_conta_uma_vez", "teste_ganha_devagar"]:
 		if await call(t) != true:
 			falhou += 1
 			push_error("FALHOU %s: não terminou" % t)
@@ -181,5 +182,67 @@ func teste_saida_do_labirinto_pelos_corredores() -> bool:
 	var prox := lab.celula(alvo)
 	igual(Cemiterio.AREAS["labirinto"].has_point(alvo), true, "saindo: o vaga-lume fica dentro do labirinto")
 	igual(lab.lab.livre(EstadoLabirinto.CHAVE, prox), true, "saindo: aponta a célula vizinha pelo corredor")
+	_fora(c)
+	return true
+
+
+const QUADRO := 1.0 / 60.0
+
+
+func _fantasmao(c: Cemiterio) -> Fantasmao:
+	return (c.atividades["arena"] as Arena).fantasmao
+
+
+func teste_fantasmao_fica_na_arena() -> bool:
+	var c := await _cena(Jogo.CEMITERIO) as Cemiterio
+	var f := _fantasmao(c)
+	var area: Rect2 = Cemiterio.AREAS["arena"]
+	var fora := 0
+	for lado: Vector2 in [Vector2.LEFT, Vector2.RIGHT, Vector2.UP, Vector2.DOWN, Vector2(1, 1).normalized()]:
+		for i in 120:
+			f.mover(QUADRO, f.global_position + lado * 200.0)  # empurrando de um lado
+			if not area.has_point(f.global_position):
+				fora += 1
+	igual(fora, 0, "Fantasmão nunca sai da arena")
+	_fora(c)
+	return true
+
+
+func teste_fantasmao_cansa() -> bool:
+	var c := await _cena(Jogo.CEMITERIO) as Cemiterio
+	var f := _fantasmao(c)
+	f.global_position = Cemiterio.AREAS["arena"].get_center()
+	igual(f.velocidade() <= Fantasmao.MAX + 0.1, true, "começa no máximo (≤ 60% da criança)")
+	for i in 8 * 60:
+		f.mover(QUADRO, f.global_position + Vector2(-300, 0))
+	igual(f.velocidade() <= 100.0, true, "depois de 8 s fugindo, cansado (%.0f)" % f.velocidade())
+	f.mover(QUADRO, f.global_position)  # pegou
+	for i in 2 * 60:
+		f.mover(QUADRO, f.global_position + Vector2(-300, 0))  # descansa e volta a fugir
+	igual(f.velocidade() > 180.0, true, "depois de pego, foge descansado (%.0f)" % f.velocidade())
+	_fora(c)
+	return true
+
+
+func teste_pegada_conta_uma_vez() -> bool:
+	var c := await _cena(Jogo.CEMITERIO) as Cemiterio
+	var f := _fantasmao(c)
+	var parado := f.global_position + Vector2(40, 0)
+	for i in 6 * 60:
+		f.mover(QUADRO, parado)  # criança parada ali, encostada, 6 s
+	igual(f.pegadas, 1, "criança parada encostada: conta uma vez só (ele pula pra longe depois do descanso)")
+	_fora(c)
+	return true
+
+
+func teste_ganha_devagar() -> bool:
+	var c := await _cena(Jogo.CEMITERIO) as Cemiterio
+	var f := _fantasmao(c)
+	var area: Rect2 = Cemiterio.AREAS["arena"]
+	var p := area.position + Vector2(600, 120)
+	for i in 40 * 60:
+		p += (f.global_position - p).normalized() * 150.0 * QUADRO  # analógico meio inclinado
+		f.mover(QUADRO, p)
+	igual(f.pegadas >= 3, true, "perseguindo a 150 px/s, pega 3 vezes em 40 s (%d)" % f.pegadas)
 	_fora(c)
 	return true
