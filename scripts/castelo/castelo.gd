@@ -71,7 +71,7 @@ func montar() -> void:
 	add_child(_pisos)
 	piso(SALAO, Color("#d9c7a4"), Color("#cbb68f"), false)
 	_tapete(SALAO.get_center() + Vector2(0, 40), Vector2(760, 460))
-	for id: String in ["cozinha", "musica", "biblioteca"]:
+	for id: String in ["cozinha", "musica", "biblioteca", "caixas"]:
 		_criar_atividade(id)
 	_paredes()
 	add_child(_mundo)
@@ -97,6 +97,8 @@ func _criar_atividade(id: String) -> void:
 			a = Musica.new()
 		"biblioteca":
 			a = Biblioteca.new()
+		"caixas":
+			a = CorredorCaixas.new()
 	a.configurar(self, AREAS[id])
 	add_child(a)
 	a.montar()
@@ -400,6 +402,26 @@ func _passar(vao: Rect2, lado: Rect2) -> Vector2:
 
 func iniciar_auto() -> void:
 	print("AUTOPLAY: começando no castelo")
+	for a: String in OS.get_cmdline_user_args():
+		if a.begins_with("--sala="):
+			_pular_ate.call_deferred(a.split("=")[1])
+
+
+## Só pra testar uma sala: dá as salas anteriores por feitas e leva a criança
+## até a porta da sala pedida.
+func _pular_ate(sala: String) -> void:
+	for id: String in ORDEM:
+		if id == sala:
+			break
+		atividades[id].terminar()
+		for p: String in portas:
+			if estado.tentar_abrir(p):
+				portas[p].abrir()
+	_auto_parado_feito = true
+	_auto_marcos["trancada"] = true
+	_auto_marcos["guia"] = true
+	jogador.global_position = _passar(VAOS[sala], SALAO if sala != "quarto" else AREAS["caixas"])
+	print("AUTOPLAY: pulou até %s" % sala)
 
 
 func tempo_limite_auto() -> float:

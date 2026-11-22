@@ -184,6 +184,10 @@ func _abertura() -> void:
 	t.tween_property(camera, "zoom", Vector2.ONE, 1.4).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
+func tempo_sem_progresso() -> float:
+	return _tempo_sem_progresso
+
+
 func progresso_feito() -> void:
 	_tempo_sem_progresso = 0.0
 	guia.parar()

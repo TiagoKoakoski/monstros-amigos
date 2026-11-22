@@ -16,6 +16,7 @@ var _tempo := 0.0
 
 func _ready() -> void:
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
+	collision_mask = 1 | Caixa.CAMADA  # paredes + caixas (a borda das caixas não segura a criança)
 	var forma := CollisionShape2D.new()
 	var circulo := CircleShape2D.new()
 	circulo.radius = 38.0  # redondo: escorrega nas paredes em vez de travar
@@ -41,6 +42,10 @@ func _physics_process(_delta: float) -> void:
 	var dir := entrada()
 	velocity = dir * VELOCIDADE
 	move_and_slide()
+	for i in get_slide_collision_count():
+		var c := get_slide_collision(i)
+		if c.get_collider() is Caixa:
+			(c.get_collider() as Caixa).empurrar(-c.get_normal())
 	movendo = dir.length() > 0.05
 	if dir.x < -0.1:
 		_visual.scale.x = -1.0
