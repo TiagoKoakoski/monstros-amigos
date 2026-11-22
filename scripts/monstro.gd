@@ -104,8 +104,8 @@ func concluir() -> void:
 ## Dá uma voltinha (rodada da música, por exemplo).
 func voltinha() -> void:
 	var t := create_tween()
-	t.tween_property(_corpo, "rotation", TAU, 0.6).set_trans(Tween.TRANS_SINE)
-	t.tween_callback(func() -> void: _corpo.rotation = 0.0)
+	for lado: float in [-1.0, 1.0, -1.0, 1.0]:
+		t.tween_property(_corpo.get_child(0), "scale:x", lado, 0.15).set_trans(Tween.TRANS_SINE)
 
 
 func altura() -> float:

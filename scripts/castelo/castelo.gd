@@ -48,6 +48,8 @@ var portas: Dictionary[String, Porta] = {}
 var chaveiro: Chaveiro
 
 var _auto_parado_feito := false
+## chão de todas as salas fica aqui embaixo de tudo
+var _pisos: Node2D
 
 
 func montar() -> void:
@@ -65,9 +67,11 @@ func montar() -> void:
 	fundo.polygon = _ret(Rect2(0, 0, W, H))
 	fundo.color = Color("#2a2357")
 	add_child(fundo)
+	_pisos = Node2D.new()
+	add_child(_pisos)
 	piso(SALAO, Color("#d9c7a4"), Color("#cbb68f"), false)
 	_tapete(SALAO.get_center() + Vector2(0, 40), Vector2(760, 460))
-	for id: String in ["cozinha"]:
+	for id: String in ["cozinha", "musica"]:
 		_criar_atividade(id)
 	_paredes()
 	add_child(_mundo)
@@ -89,6 +93,8 @@ func _criar_atividade(id: String) -> void:
 	match id:
 		"cozinha":
 			a = Cozinha.new()
+		"musica":
+			a = Musica.new()
 	a.configurar(self, AREAS[id])
 	add_child(a)
 	a.montar()
@@ -137,7 +143,7 @@ func piso(r: Rect2, cor: Color, linha: Color, xadrez: bool) -> void:
 	var chao := Polygon2D.new()
 	chao.polygon = _ret(r)
 	chao.color = cor
-	add_child(chao)
+	_pisos.add_child(chao)
 	var lado := 125.0
 	if xadrez:
 		var y := r.position.y
@@ -148,7 +154,7 @@ func piso(r: Rect2, cor: Color, linha: Color, xadrez: bool) -> void:
 				var q := Polygon2D.new()
 				q.polygon = _ret(Rect2(x, y, minf(lado, r.end.x - x), minf(lado, r.end.y - y)))
 				q.color = linha
-				add_child(q)
+				_pisos.add_child(q)
 				x += lado * 2.0
 			y += lado
 			j += 1
@@ -197,7 +203,7 @@ func _linha(a: Vector2, b: Vector2, cor: Color) -> void:
 	l.points = PackedVector2Array([a, b])
 	l.width = 4.0
 	l.default_color = cor
-	add_child(l)
+	_pisos.add_child(l)
 
 
 func _ret(r: Rect2) -> PackedVector2Array:
@@ -213,7 +219,7 @@ func _tapete(centro: Vector2, tamanho: Vector2) -> void:
 			pts.append(centro + Vector2(cos(a) * tamanho.x * 0.5, sin(a) * tamanho.y * 0.5) * camada[0])
 		p.polygon = pts
 		p.color = camada[1]
-		add_child(p)
+		_pisos.add_child(p)
 
 
 func _paredes() -> void:
