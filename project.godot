@@ -6,13 +6,14 @@ config_version=5
 [application]
 
 config/name="Monstros Amigos"
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/jardim.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://arte/icone.svg"
 
 [autoload]
 
 Controles="*res://scripts/controles.gd"
+Jogo="*res://scripts/jogo.gd"
 
 [display]
 
