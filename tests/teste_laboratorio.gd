@@ -7,7 +7,8 @@ var falhou := 0
 
 
 func _initialize() -> void:
-	for t: String in ["teste_progresso_por_fase", "teste_estado_salas"]:
+	for t: String in ["teste_progresso_por_fase", "teste_estado_salas", "teste_mistura", "teste_pedidos_em_ordem",
+			"teste_ajuda"]:
 		if call(t) != true:
 			falhou += 1
 			push_error("FALHOU %s: não terminou (erro em tempo de execução?)" % t)
@@ -69,3 +70,54 @@ func teste_estado_salas() -> bool:
 	var vazio: Array[String] = []
 	igual(classe.new(vazio, {}, {}).todas_salas(), true, "sem salas = todas feitas")
 	return true
+
+
+func teste_mistura() -> bool:
+	var c = _classe("estado_pocoes")
+	for par: Array in [["azul", "amarelo", "verde"], ["vermelho", "amarelo", "laranja"],
+			["vermelho", "azul", "roxo"], ["vermelho", "branco", "rosa"]]:
+		igual(c.misturar(par[0], par[1]), par[2], "%s + %s" % [par[0], par[1]])
+		igual(c.misturar(par[1], par[0]), par[2], "%s + %s (ordem trocada)" % [par[1], par[0]])
+	igual(c.misturar("azul", "azul"), "azul", "mesma cor duas vezes = a própria cor")
+	igual(c.PEDIDOS.has(c.misturar("azul", "branco")), false, "azul + branco não é pedido")
+	igual(c.receita("verde"), ["azul", "amarelo"] as Array[String], "receita do verde")
+	return true
+
+
+func teste_pedidos_em_ordem() -> bool:
+	var e = _classe("estado_pocoes").new()
+	igual(e.pedido_atual(), "verde", "primeiro pedido: verde")
+	igual(e.colocar("azul"), "dentro", "uma cor: fica no caldeirão")
+	igual(e.caldeirao, ["azul"] as Array[String], "caldeirão com azul")
+	igual(e.colocar("amarelo"), "certo", "azul + amarelo = verde")
+	igual(e.pedido_atual(), "laranja", "depois: laranja")
+	igual(e.caldeirao.is_empty(), true, "caldeirão esvazia depois da poção")
+	e.colocar("vermelho")
+	igual(e.colocar("azul"), "plop", "roxo fora da vez: plop")
+	igual(e.caldeirao.is_empty(), true, "plop esvazia")
+	igual(e.feitos(), 1, "plop não tira o que já foi feito")
+	igual(e.pedido_atual(), "laranja", "plop não muda o pedido")
+	e.colocar("amarelo")
+	igual(e.colocar("vermelho"), "certo", "laranja")
+	e.colocar("vermelho")
+	igual(e.colocar("azul"), "certo", "roxo")
+	e.colocar("branco")
+	igual(e.colocar("vermelho"), "fim", "rosa: último")
+	igual(e.pedido_atual(), "", "sem pedido no fim")
+	igual(e.colocar("azul"), "ignorado", "depois do fim: ignorado")
+	return true
+
+
+func teste_ajuda() -> bool:
+	var e = _classe("estado_pocoes").new()
+	igual(e.ajuda("azul"), true, "verde: azul ajuda")
+	igual(e.ajuda("vermelho"), false, "verde: vermelho não ajuda")
+	igual(e.faltam(), ["azul", "amarelo"] as Array[String], "faltam azul e amarelo")
+	e.colocar("azul")
+	igual(e.ajuda("azul"), false, "azul já está dentro")
+	igual(e.faltam(), ["amarelo"] as Array[String], "falta amarelo")
+	var e2 = _classe("estado_pocoes").new()
+	e2.colocar("vermelho")
+	igual(e2.ajuda("azul"), false, "com cor errada dentro: nada ajuda (vai dar plop)")
+	return true
+

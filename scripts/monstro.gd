@@ -77,6 +77,11 @@ func marcar_icone(i: int) -> void:
 	t.tween_property(s, "scale", base, 0.2)
 
 
+## Pinta um desenho do balão (sem pulinho): ex. a cor da poção pedida.
+func tingir_icone(i: int, cor: Color) -> void:
+	_icones[i].modulate = cor
+
+
 ## Recebe uma parte do pedido: o item voa até ele e some.
 func receber_parcial(item: Node2D) -> void:
 	item.reparent(self, true)

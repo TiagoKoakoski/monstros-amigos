@@ -126,6 +126,7 @@ def main() -> None:
     salvar(normaliza(musica, PICO * 0.85), saida / "musica_festa.wav")
 
     castelo(saida)
+    laboratorio(saida)
 
 
 def ruido_madeira(dur: float, semente: int = 3) -> np.ndarray:
@@ -176,6 +177,78 @@ def castelo(saida: Path) -> None:
     ev += [(c * 4 * sem, b, 3.2, 0.6, 1.3) for c, b in enumerate(baixo)]
     ev += [(c * 4 * sem + 2 * sem, b[:-1] + str(int(b[-1]) + 1), 1.6, 0.22, 2.2) for c, b in enumerate(baixo)]
     salvar(normaliza(laco(ev, 32 * sem), PICO * 0.7), saida / "musica_castelo.wav")
+
+
+def ruido_suave(dur: float, janela: int, semente: int) -> np.ndarray:
+    """Ruído filtrado (água, vapor): só graves, sem chiado."""
+    n = int(SR * dur)
+    rng = np.random.default_rng(semente)
+    return np.convolve(rng.standard_normal(n), np.ones(janela) / janela, mode="same")
+
+
+def glissando(f0: float, f1: float, dur: float, decai: float = 6.0) -> np.ndarray:
+    t = np.arange(int(SR * dur)) / SR
+    f = f0 + (f1 - f0) * (t / dur)
+    fase = 2 * np.pi * np.cumsum(f) / SR
+    return (np.sin(fase) + 0.25 * np.sin(2 * fase)) * np.clip(t / 0.012, 0, 1) * np.exp(-t * decai)
+
+
+def laboratorio(saida: Path) -> None:
+    """Sons da fase 3 (laboratório do Frankenstein)."""
+    # alçapão abrindo: rangido suave subindo + sininho
+    rang = glissando(180, 320, 0.7, 3.5) * 0.7 + ruido_madeira(0.7, 9) * 1.5
+    alcapao = np.zeros(int(SR * 1.0))
+    alcapao[: len(rang)] += rang
+    alcapao[int(SR * 0.2):] += sequencia(["C6", "G6"], 0.1, 0.8, 6)
+    salvar(normaliza(alcapao, PICO * 0.75), saida / "alcapao.wav")
+
+    # caldeirão: plop (gota grave descendo) e borbulha (bolhas subindo + acorde)
+    salvar(normaliza(glissando(420, 140, 0.35, 9), PICO * 0.7), saida / "plop.wav")
+    bolhas = np.zeros(int(SR * 1.3))
+    for k, (ini, f) in enumerate([(0.0, 500), (0.12, 650), (0.22, 560), (0.34, 760), (0.45, 900)]):
+        b = glissando(f, f * 1.6, 0.16, 14)
+        i = int(ini * SR)
+        bolhas[i:i + len(b)] += b * 0.6
+    bolhas += sequencia(["C5", "E5", "G5", "C6"], 0.12, 1.3, decai=4) * 0.8
+    salvar(normaliza(bolhas, PICO * 0.8), saida / "borbulha.wav")
+
+    # canos: clique suave de girar, água correndo, planta crescendo
+    salvar(normaliza(ruido_madeira(0.25, 11) * 1.4 + 0.5 * sino(freq("G5"), 0.25, 14), PICO * 0.6), saida / "clique.wav")
+    dur = 2.2
+    t = np.arange(int(SR * dur)) / SR
+    agua = ruido_suave(dur, 60, 13) * (0.6 + 0.4 * np.sin(2 * np.pi * 5 * t)) * np.clip(t / 0.3, 0, 1) * np.clip((dur - t) / 0.5, 0, 1)
+    for ini in (0.2, 0.6, 1.1, 1.5):
+        g = glissando(700, 1100, 0.12, 16)
+        i = int(ini * SR)
+        agua[i:i + len(g)] += g * 0.08
+    salvar(normaliza(agua, PICO * 0.6), saida / "agua.wav")
+    salvar(normaliza(np.pad(glissando(300, 900, 1.2, 2.5), (0, int(SR * 0.4))) * 0.6 + sequencia(["C5", "D5", "E5", "G5", "A5", "C6"], 0.16, 1.6, decai=4)), saida / "planta.wav")
+
+    # botões das formas: uma nota por forma (mesma pentatônica da música, uma oitava abaixo e marimba)
+    for i, nota in enumerate(["G4", "A4", "C5", "D5"]):
+        salvar(normaliza(sino(freq(nota), 0.7, 6, brilho=0.6), PICO * 0.85), saida / f"forma_{i}.wav")
+
+    # máquina ligando: zumbido grave crescendo suave + arpejo brilhante (nada alto)
+    dur = 2.6
+    t = np.arange(int(SR * dur)) / SR
+    zumbido = (np.sin(2 * np.pi * 110 * t) + 0.5 * np.sin(2 * np.pi * 165 * t)) * np.clip(t / 1.2, 0, 1) * np.exp(-np.clip(t - 1.6, 0, None) * 3)
+    arpejo = np.zeros(len(t))
+    arp = sequencia(["C5", "E5", "G5", "C6", "E6", "G6"], 0.11, 1.4, decai=4)
+    arpejo[int(SR * 1.1): int(SR * 1.1) + len(arp)] += arp[: len(t) - int(SR * 1.1)]
+    salvar(normaliza(zumbido * 0.35 + arpejo, PICO * 0.7), saida / "maquina.wav")
+
+    # música do laboratório: Lá menor dórico brincalhão, 96 bpm, pizzicato
+    bpm = 96
+    col = 60 / bpm / 2
+    melodia = ["A5", None, "C6", "A5", "E5", None, "G5", "A5", "B5", None, "D6", "B5", "G5", None, "A5", None,
+               "C6", "D6", "E6", None, "D6", "C6", "B5", None, "A5", "G5", "E5", "G5", "A5", None, None, None]
+    baixo = ["A2", "A2", "G2", "G2", "F2", "F2", "E2", "E2"]
+    ev = [(i * col, n, 0.5, 0.8, 7.0) for i, n in enumerate(melodia) if n]
+    for c, b in enumerate(baixo):
+        for k in range(2):
+            ev.append(((c * 4 + k * 2) * col, b, 0.6, 0.7, 5.0))
+            ev.append(((c * 4 + k * 2 + 1) * col, b[:-1] + "3", 0.4, 0.3, 7.0))
+    salvar(normaliza(laco(ev, 32 * col), PICO * 0.7), saida / "musica_laboratorio.wav")
 
 
 if __name__ == "__main__":

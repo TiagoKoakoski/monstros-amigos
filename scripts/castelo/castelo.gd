@@ -8,6 +8,8 @@ extends FaseDeSalas
 ##  [Corredor]=[ SALÃO ]=[Cozinha]   Música  -> chave vermelha (Corredor)
 ##   verm. |                        Corredor das caixas -> abre o Quarto
 ##  [Quarto]
+##
+## Na festa abre um alçapão no canto do salão: desce pro laboratório.
 
 const W := 3600.0
 const H := 2900.0
@@ -39,6 +41,12 @@ const PAREDES := [
 ]
 const ORDEM: Array[String] = ["cozinha", "musica", "biblioteca", "caixas", "quarto"]
 const CORES_PORTA := {"biblioteca": Color("#4aa3ff"), "caixas": Color("#ff6f91"), "quarto": Color("#ffd23f")}
+## canto de baixo à esquerda do salão, fora dos caminhos entre as portas
+const ALCAPAO := Vector2(1300, 1820)
+
+var alcapao: Alcapao
+var _ir_pro_alcapao := false
+var _descendo := false
 
 
 func configurar_mapa() -> void:
@@ -59,6 +67,7 @@ func configurar_mapa() -> void:
 	cor_face = Color("#5a4b8a")
 	estado = EstadoCastelo.new()
 	Jogo.progresso.marcar_castelo_aberto()  # chegou aqui: a porta fica aberta nas próximas
+	carregar_som("alcapao")
 
 
 func nova_atividade(id: String) -> Atividade:
@@ -82,7 +91,7 @@ func decorar() -> void:
 	for x: float in [1400.0, 2200.0]:
 		tocha(Vector2(x, 1000))
 	var abobora := load("res://arte/abobora.svg") as Texture2D
-	for pos: Vector2 in [Vector2(1300, 1130), Vector2(2300, 1130), Vector2(1300, 1820), Vector2(2300, 1820)]:
+	for pos: Vector2 in [Vector2(1300, 1130), Vector2(2300, 1130), Vector2(1480, 1840), Vector2(2300, 1820)]:
 		var s := Visual.sprite_em_pe(abobora)
 		s.position = pos
 		_mundo.add_child(s)
@@ -92,6 +101,10 @@ func decorar() -> void:
 		luz.scale.y *= 0.6
 		add_child(luz)
 	_porta_de_entrada()
+	alcapao = Alcapao.new()
+	no_chao(alcapao)
+	# já esteve no laboratório: o alçapão fica aberto (atalho, como a porta do jardim)
+	alcapao.configurar(ALCAPAO, Jogo.progresso.alcancou("laboratorio"))
 
 
 func _tapete(centro: Vector2, tamanho: Vector2) -> void:
@@ -137,12 +150,71 @@ func festa_final() -> void:
 		t.tween_interval(1.2 + j * 0.2)
 		t.tween_callback(f.acordar)
 		t.tween_property(f, "global_position", SALAO.get_center() + Vector2([-470.0, 470.0, -330.0][j], [200.0, 200.0, 330.0][j]), 1.8).set_trans(Tween.TRANS_SINE)
-	comecar_festa(SALAO.get_center() + Vector2(0, -60), true)
+	comecar_festa(SALAO.get_center() + Vector2(0, -60), false)
 	marco("festa_castelo", 4.0)
+	var t := create_tween()
+	t.tween_interval(5.0)
+	t.tween_callback(_abrir_alcapao)
+	t.tween_interval(2.4)
+	t.tween_callback(func() -> void:
+		(get_node("Interface/Chuva") as CPUParticles2D).emitting = false
+		_ir_pro_alcapao = true
+		_tempo_sem_progresso = espera_guia - 1.0  # vaga-lume aparece logo
+		seguir_jogador())
 
 
-func ao_recomecar() -> void:
-	Jogo.trocar_fase(Jogo.JARDIM)
+## O alçapão abre e o Frankenstein pula dentro na frente (mostra o caminho).
+func _abrir_alcapao() -> void:
+	if not alcapao.aberto:
+		alcapao.abrir()
+		tocar("alcapao")
+	var frank := atividades["cozinha"].monstro()
+	var t := create_tween()
+	t.tween_property(frank, "global_position", ALCAPAO + Vector2(0, -40), 1.4).set_trans(Tween.TRANS_SINE)
+	t.tween_property(frank, "scale", Vector2.ONE * 0.2, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	t.parallel().tween_property(frank, "modulate:a", 0.0, 0.5)
+	marco("alcapao_aberto", 2.0)
+
+
+func guia_ligado() -> bool:
+	return not em_festa or _ir_pro_alcapao
+
+
+func alvo_atual() -> Vector2:
+	if _ir_pro_alcapao:
+		return _ate_o_alcapao()
+	return super()
+
+
+## Caminho até o alçapão: se a festa pegou a criança numa sala, primeiro sai dela.
+func _ate_o_alcapao() -> Vector2:
+	var aqui := sala_do_jogador()
+	if aqui == "quarto":
+		return _passar(VAOS["quarto"], AREAS["caixas"])
+	if aqui != "":
+		return _passar(VAOS[aqui], SALAO)
+	return ALCAPAO
+
+
+func checar_interacoes() -> void:
+	if alcapao.perto(jogador.global_position):
+		_descer()
+		return
+	super()
+
+
+func _descer() -> void:
+	if _descendo:
+		return
+	_descendo = true
+	if Jogo.auto:
+		marco("alcapao")
+		var falhas := _auto_falhas + verificar_fim_auto()
+		if not falhas.is_empty() or sala_pedida() != "":
+			_sair_com(falhas)
+			return
+	tocar("alcapao")
+	Jogo.trocar_fase(Jogo.LABORATORIO)
 
 
 ## O quarto só se chega pelo corredor das caixas.
@@ -175,7 +247,7 @@ func tempo_limite_auto() -> float:
 
 func pilotar_auto(delta: float) -> Vector2:
 	if em_festa:
-		return Vector2.ZERO
+		return andar_ate(_ate_o_alcapao(), delta) if _ir_pro_alcapao else Vector2.ZERO
 	if _tempo > 2.0:
 		marco("inicio_castelo", 0.0)
 	# fica parado até o vaga-lume aparecer (espera mais longa no castelo)
@@ -191,7 +263,7 @@ func pilotar_auto(delta: float) -> Vector2:
 
 func marcos_obrigatorios() -> Array[String]:
 	if sala_pedida() != "":
-		return ["festa_castelo", "pode_recomecar"]
+		return ["festa_castelo", "alcapao"]
 	return ["inicio_castelo", "guia", "trancada", "cozinha", "chave_azul", "nota_errada", "musica",
 		"chave_vermelha", "abriu_biblioteca", "velas", "biblioteca", "abriu_caixas", "borda", "caixas", "filhote",
-		"cama", "quarto", "festa_castelo", "pode_recomecar"]
+		"cama", "quarto", "festa_castelo", "alcapao_aberto", "alcapao"]

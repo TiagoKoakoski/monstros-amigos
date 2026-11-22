@@ -170,7 +170,7 @@ func _entrar_no_castelo() -> void:
 		var falhas := _auto_falhas + verificar_fim_auto()
 		if not falhas.is_empty() or Jogo.marcos_globais.has("segunda_volta"):
 			if falhas.is_empty():
-				Jogo.marcos_globais["resumo"] = "jogo completo: jardim, castelo, festa, volta ao jardim com a porta aberta e entrada de novo"
+				Jogo.marcos_globais["resumo"] = "jogo completo: jardim, castelo, laboratório, festa, volta ao jardim com a porta aberta e entrada de novo"
 			_sair_com(falhas)
 			return
 	Jogo.progresso.marcar_castelo_aberto()
@@ -412,7 +412,7 @@ func verificar_fim_auto() -> Array[String]:
 	return falhas
 
 
-## Voltou da festa do castelo pelo botão A: o jardim tem que estar limpo e
+## Voltou da festa do laboratório pelo botão A: o jardim tem que estar limpo e
 ## com a porta do castelo já aberta. Depois joga o jardim de novo (com a
 ## porta aberta desde o começo) até entrar pela porta.
 func _conferir_recomeco() -> void:
@@ -433,6 +433,6 @@ func _conferir_recomeco() -> void:
 			falha_auto(f)
 		_sair_com(_auto_falhas)
 		return
-	print("AUTOPLAY: botão A na festa do castelo voltou pro jardim limpo, com a porta aberta")
+	print("AUTOPLAY: botão A na festa do laboratório voltou pro jardim limpo, com a porta aberta")
 	Jogo.marcos_globais["segunda_volta"] = true
 	marco("jardim_de_novo", 0.5)
