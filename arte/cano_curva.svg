@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
+  <rect x="6" y="6" width="168" height="168" rx="26" fill="#cfc4ea" stroke="#2b2346" stroke-width="5" stroke-opacity="0.5"/>
+  <path d="M90 0 V40 Q90 90 140 90 H180" fill="none" stroke="#2b2346" stroke-width="74"/>
+  <path d="M90 0 V40 Q90 90 140 90 H180" fill="none" stroke="#8fa3c7" stroke-width="64"/>
+  <path d="M90 0 V40 Q90 90 140 90 H180" fill="none" stroke="#e8f2ff" stroke-width="32"/>
+  <rect x="50" y="10" width="80" height="20" rx="6" fill="#6f84ad" stroke="#2b2346" stroke-width="5"/>
+  <rect x="150" y="50" width="20" height="80" rx="6" fill="#6f84ad" stroke="#2b2346" stroke-width="5"/>
+</svg>

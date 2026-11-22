@@ -33,7 +33,7 @@ const PAREDES := [
 	Rect2(1200, 1900, 100, 1100), Rect2(2500, 2100, 100, 900), Rect2(1200, 2900, 1400, 100),
 ]
 ## cada sala entra aqui quando fica pronta
-const ORDEM: Array[String] = ["pocoes"]
+const ORDEM: Array[String] = ["pocoes", "canos"]
 const CHAVE_DA_SALA := {"pocoes": "verde", "canos": "laranja"}
 const PORTAS := {"canos": "verde", "formas": "laranja"}
 const CORES_PORTA := {"canos": Color("#5bd17a"), "formas": Color("#ff9f43")}
@@ -72,6 +72,8 @@ func nova_atividade(id: String) -> Atividade:
 	match id:
 		"pocoes":
 			return Pocoes.new()
+		"canos":
+			return Canos.new()
 	return null
 
 
@@ -165,4 +167,5 @@ func pilotar_auto(delta: float) -> Vector2:
 func marcos_obrigatorios() -> Array[String]:
 	if sala_pedida() != "":
 		return ["festa_laboratorio", "pode_recomecar"]
-	return ["inicio_laboratorio", "guia", "plop", "pocoes", "chave_verde", "festa_laboratorio", "pode_recomecar"]
+	return ["inicio_laboratorio", "guia", "plop", "pocoes", "chave_verde", "abriu_canos", "armadilha", "canos",
+		"chave_laranja", "festa_laboratorio", "pode_recomecar"]

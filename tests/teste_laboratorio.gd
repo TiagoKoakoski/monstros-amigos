@@ -8,7 +8,8 @@ var falhou := 0
 
 func _initialize() -> void:
 	for t: String in ["teste_progresso_por_fase", "teste_estado_salas", "teste_mistura", "teste_pedidos_em_ordem",
-			"teste_ajuda"]:
+			"teste_ajuda", "teste_canos_rotacao", "teste_canos_padrao", "teste_canos_armadilha_nao_conecta",
+			"teste_canos_toda_rotacao_alcancavel"]:
 		if call(t) != true:
 			falhou += 1
 			push_error("FALHOU %s: não terminou (erro em tempo de execução?)" % t)
@@ -121,3 +122,70 @@ func teste_ajuda() -> bool:
 	igual(e2.ajuda("azul"), false, "com cor errada dentro: nada ajuda (vai dar plop)")
 	return true
 
+
+const N := 1
+const E := 2
+const S := 4
+const O := 8
+
+
+func teste_canos_rotacao() -> bool:
+	var c = _classe("estado_canos").new({
+		Vector2i(0, 0): {"tipo": "reta", "rot": 0, "solucao": 0},
+		Vector2i(1, 0): {"tipo": "curva", "rot": 0, "solucao": 0},
+	})
+	igual(c.lados(Vector2i(0, 0)), N | S, "reta rot 0: norte-sul")
+	c.girar(Vector2i(0, 0))
+	igual(c.lados(Vector2i(0, 0)), E | O, "reta girada: leste-oeste")
+	var esperado: Array[int] = [N | E, E | S, S | O, O | N, N | E]
+	for i in 5:
+		igual(c.lados(Vector2i(1, 0)), esperado[i], "curva rot %d" % i)
+		c.girar(Vector2i(1, 0))
+	return true
+
+
+## Gira cada peça errada do caminho até ficar certa (como a criança faria).
+func _resolver(c) -> void:
+	var limite := 100
+	while c.proxima_errada() != Vector2i(-1, -1) and limite > 0:
+		c.girar(c.proxima_errada())
+		limite -= 1
+
+
+func teste_canos_padrao() -> bool:
+	var c = _classe("estado_canos").padrao()
+	igual(c.conectado(), false, "começa desligado")
+	igual(c.certas(), 2, "2 peças do caminho começam certas")
+	igual(c.proxima_errada(), Vector2i(0, 0), "a primeira errada é a da torneira")
+	_resolver(c)
+	igual(c.conectado(), true, "resolvido: água chega no vaso")
+	igual(c.agua().size(), 9, "9 peças cheias")
+	igual(c.agua().has(Vector2i(1, 1)), false, "armadilha sem água")
+	return true
+
+
+func teste_canos_armadilha_nao_conecta() -> bool:
+	var c = _classe("estado_canos").padrao()
+	_resolver(c)
+	for i in 4:
+		c.girar(Vector2i(1, 1))
+		igual(c.conectado(), true, "girar a armadilha não desliga (%d)" % i)
+		igual(c.agua().has(Vector2i(1, 1)), false, "armadilha nunca enche (%d)" % i)
+	var d = _classe("estado_canos").padrao()
+	var antes: int = d.certas()
+	d.girar(Vector2i(1, 1))
+	igual(d.certas(), antes, "girar a armadilha não conta como peça certa")
+	return true
+
+
+func teste_canos_toda_rotacao_alcancavel() -> bool:
+	var c = _classe("estado_canos").padrao()
+	for cel: Vector2i in c.celulas():
+		var inicio: int = c.lados(cel)
+		var vistos := {}
+		for i in 4:
+			vistos[c.lados(cel)] = true
+			c.girar(cel)
+		igual(c.lados(cel), inicio, "%s volta ao começo em 4 giros" % cel)
+		igual(vistos.size(), 2 if c.tipo(cel) == "reta" else 4, "%s passa por todas as posições" % cel)
+	return true

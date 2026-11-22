@@ -20,7 +20,8 @@ func _rodar() -> void:
 	jogo.progresso.apagar()
 	for t: String in ["teste_alcapao_fechado_sem_progresso", "teste_alcapao_aberto_com_progresso",
 			"teste_alcapao_fora_do_caminho", "teste_laboratorio_marca_progresso", "teste_plop_nao_cala_o_vagalume",
-			"teste_caminho_pro_alcapao_sai_da_sala"]:
+			"teste_caminho_pro_alcapao_sai_da_sala", "teste_passar_correndo_nao_gira", "teste_parado_gira",
+			"teste_armadilha_nao_cala_o_vagalume"]:
 		if await call(t) != true:
 			falhou += 1
 			push_error("FALHOU %s: não terminou" % t)
@@ -124,3 +125,44 @@ func teste_caminho_pro_alcapao_sai_da_sala() -> bool:
 	Jogo.progresso.apagar()
 	return true
 
+
+func teste_passar_correndo_nao_gira() -> bool:
+	var l := await _cena(Jogo.LABORATORIO) as Laboratorio
+	var k := l.atividades["canos"] as Canos
+	var cel := Vector2i(0, 0)
+	var antes := k.canos.rot(cel)
+	var de := k.centro(cel) - Vector2(300, 0)
+	for i in 60:
+		k.checar(de + Vector2(10.0 * i, 0))
+	igual(k.canos.rot(cel), antes, "atravessar a peça andando não gira")
+	_fora(l)
+	Jogo.progresso.apagar()
+	return true
+
+
+func teste_parado_gira() -> bool:
+	var l := await _cena(Jogo.LABORATORIO) as Laboratorio
+	var k := l.atividades["canos"] as Canos
+	var cel := Vector2i(0, 0)
+	var antes := k.canos.rot(cel)
+	for i in 33:
+		k.checar(k.centro(cel))
+	igual(k.canos.rot(cel), (antes + 1) % 4, "parado meio segundo: gira uma vez")
+	for i in 62:
+		k.checar(k.centro(cel))
+	igual(k.canos.rot(cel), (antes + 2) % 4, "continua parado: gira de novo depois de 1 s")
+	_fora(l)
+	Jogo.progresso.apagar()
+	return true
+
+
+func teste_armadilha_nao_cala_o_vagalume() -> bool:
+	var l := await _cena(Jogo.LABORATORIO) as Laboratorio
+	var k := l.atividades["canos"] as Canos
+	l._tempo_sem_progresso = 5.0
+	for i in 300:
+		k.checar(k.centro(Vector2i(1, 1)))
+	igual(l.tempo_sem_progresso() >= 5.0, true, "girar a armadilha 5 s não conta como avanço")
+	_fora(l)
+	Jogo.progresso.apagar()
+	return true
