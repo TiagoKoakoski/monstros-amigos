@@ -71,7 +71,7 @@ func montar() -> void:
 	add_child(_pisos)
 	piso(SALAO, Color("#d9c7a4"), Color("#cbb68f"), false)
 	_tapete(SALAO.get_center() + Vector2(0, 40), Vector2(760, 460))
-	for id: String in ["cozinha", "musica"]:
+	for id: String in ["cozinha", "musica", "biblioteca"]:
 		_criar_atividade(id)
 	_paredes()
 	add_child(_mundo)
@@ -95,6 +95,8 @@ func _criar_atividade(id: String) -> void:
 			a = Cozinha.new()
 		"musica":
 			a = Musica.new()
+		"biblioteca":
+			a = Biblioteca.new()
 	a.configurar(self, AREAS[id])
 	add_child(a)
 	a.montar()
