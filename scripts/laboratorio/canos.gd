@@ -6,15 +6,17 @@ extends Atividade
 
 const PRIMEIRO_GIRO := 0.5
 const OUTRO_GIRO := 1.0
-## andou menos que isso desde o último quadro = está parado
-const PARADO := 4.0
+## longe disso do ponto onde parou = andou (analógico meio inclinado também anda)
+const PARADO := 12.0
+## depois que a peça fica certa, espera mais antes de girar de novo
+const ESPERA_CERTA := 1.5
 const PASSO := 260.0
 
 var canos: EstadoCanos
 var lobi: Monstro
 var pecas: Dictionary[Vector2i, PecaCano] = {}
 var _sobre := Vector2i(-1, -1)
-var _ultima := Vector2.INF
+var _ancora := Vector2.INF
 var _parado := 0.0
 var _proximo_giro := PRIMEIRO_GIRO
 var _melhor := 0
@@ -62,13 +64,13 @@ func checar(p: Vector2) -> void:
 		if pecas[cel].contem(p):
 			agora = cel
 	var dt := get_physics_process_delta_time()
-	if agora != Vector2i(-1, -1) and agora == _sobre and p.distance_to(_ultima) < PARADO:
+	if agora != Vector2i(-1, -1) and agora == _sobre and p.distance_to(_ancora) < PARADO:
 		_parado += dt
 	else:
 		_parado = 0.0
 		_proximo_giro = PRIMEIRO_GIRO
+		_ancora = p
 	_sobre = agora
-	_ultima = p
 	if _sobre != Vector2i(-1, -1) and _parado >= _proximo_giro:
 		_proximo_giro += OUTRO_GIRO
 		_girar(_sobre)
@@ -82,11 +84,27 @@ func _girar(cel: Vector2i) -> void:
 		mapa.marco("armadilha", 0.3)
 		_auto_armadilha = true
 		return  # girar a armadilha não é avanço (não cala o vaga-lume)
+	if canos.certa(cel):
+		_proximo_giro += ESPERA_CERTA  # deu certo: dá tempo de sair antes de girar de novo
 	if canos.certas() > _melhor:
 		_melhor = canos.certas()
-		mapa.progresso_feito()
+		# com o vaga-lume aparecendo, ele segue direto pra próxima peça
+		if not mapa.guia.ativo():
+			mapa.progresso_feito()
 	if canos.conectado():
 		_agua_corre()
+	else:
+		_mostrar_agua()
+
+
+## A água enche o pedaço do caminho que já está ligado na torneira.
+func _mostrar_agua() -> void:
+	var cheias := canos.agua()
+	for cel: Vector2i in pecas:
+		if cheias.has(cel):
+			pecas[cel].encher(0.0)
+		else:
+			pecas[cel].esvaziar()
 
 
 func _agua_corre() -> void:

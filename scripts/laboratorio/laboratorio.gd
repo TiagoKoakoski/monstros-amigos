@@ -37,7 +37,9 @@ const ORDEM: Array[String] = ["pocoes", "canos", "formas"]
 const CHAVE_DA_SALA := {"pocoes": "verde", "canos": "laranja"}
 const PORTAS := {"canos": "verde", "formas": "laranja"}
 const CORES_PORTA := {"canos": Color("#5bd17a"), "formas": Color("#ff9f43")}
-const MAQUINA := Vector2(1900, 1560)
+## pés da máquina acima do corredor Poções <-> Canos (y 1300..1500): a criança
+## passa na frente dela, nunca escondida atrás
+const MAQUINA := Vector2(1900, 1250)
 const CABO := {"pocoes": 0, "canos": 1, "formas": 2}
 
 var maquina: Maquina
@@ -47,7 +49,7 @@ var mumia: Monstro
 func configurar_mapa() -> void:
 	largura = W
 	altura = H
-	inicio = Vector2(1900, 1150)
+	inicio = Vector2(1560, 1150)
 	espera_guia = 12.0
 	musica_inicial = "res://sons/musica_laboratorio.wav"
 	zoom_abertura = 0.62
@@ -83,7 +85,7 @@ func decorar() -> void:
 	piso(SALAO, Color("#d8cdf0"), Color("#c9bce6"), false)
 	# escada de chegada, encostada na parede de cima
 	var escada := Visual.sprite_em_pe(load("res://arte/escada.svg") as Texture2D)
-	escada.position = Vector2(1900, 1020)
+	escada.position = Vector2(1560, 1020)
 	escada.z_index = 1
 	add_child(escada)
 	maquina = Maquina.new()
@@ -96,7 +98,7 @@ func decorar() -> void:
 	mumia.position = Vector2(2250, 1450)
 	no_mundo(mumia)
 	# tubos de vidro borbulhando e luzes coloridas: porão alegre, nada escuro
-	for x: float in [1420.0, 2380.0]:
+	for x: float in [1360.0, 2440.0]:
 		var tubo := Visual.sprite_em_pe(load("res://arte/tubo_vidro.svg") as Texture2D)
 		tubo.position = Vector2(x, 1130)
 		no_mundo(tubo)

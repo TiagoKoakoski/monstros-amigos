@@ -17,8 +17,8 @@ var _tempo := 0.0
 ## `mapa`: a fase (pra pôr a máquina de pé no mundo com colisão).
 func montar(mapa: FaseDeSalas, pes: Vector2) -> void:
 	position = pes
-	# cabos no chão saindo pras 3 salas (esquerda, direita, baixo)
-	var pontas: Array[Vector2] = [Vector2(-560, -40), Vector2(560, -40), Vector2(0, 300)]
+	# cabos no chão saindo pras portas das 3 salas (esquerda, direita, baixo)
+	var pontas: Array[Vector2] = [Vector2(-600, 150), Vector2(600, 150), Vector2(0, 630)]
 	for i in 3:
 		var l := Line2D.new()
 		l.points = PackedVector2Array([pes + Vector2(0, -20), pes + (pontas[i] * 0.5) + Vector2(0, 40), pes + pontas[i]])

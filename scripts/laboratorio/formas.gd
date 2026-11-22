@@ -24,6 +24,9 @@ var _feitos := 0
 var _meio := Vector2.ZERO
 var _texturas: Array[Texture2D] = []
 var _auto_errou := false
+## o que o painel está mostrando agora
+var painel_grupo: Array[int] = []
+var painel_feitos := 0
 
 
 func montar() -> void:
@@ -58,14 +61,19 @@ func montar() -> void:
 
 
 func _mostrar() -> void:
-	var grupo := seq.sequencia() if not seq.terminou() else ([] as Array[int])
-	painel.mostrar(grupo, _texturas, CORES, _feitos)
+	_mostrar_grupo(seq.sequencia() if not seq.terminou() else ([] as Array[int]), _feitos)
+
+
+func _mostrar_grupo(grupo: Array[int], feitos: int) -> void:
+	painel_grupo = grupo
+	painel_feitos = feitos
+	painel.mostrar(grupo, _texturas, CORES, feitos)
 	var lab := mapa as Laboratorio
 	if lab and lab.maquina:
 		var cores: Array[Color] = []
 		for f: int in grupo:
 			cores.append(CORES[f])
-		lab.maquina.espelhar(cores, _feitos)
+		lab.maquina.espelhar(cores, feitos)
 
 
 func checar(p: Vector2) -> void:
@@ -83,6 +91,7 @@ func checar(p: Vector2) -> void:
 
 
 func _pisou(forma: int) -> void:
+	var grupo := seq.sequencia()
 	var r := seq.pisar(forma)
 	if r == "erro":
 		botoes[forma].apertar(false)
@@ -97,10 +106,11 @@ func _pisou(forma: int) -> void:
 	mapa.tocar("forma_%d" % forma)
 	mapa.progresso_feito()
 	_feitos += 1
-	_mostrar()
 	if r == "certo":
+		_mostrar()
 		return
-	# grupo fechado
+	# grupo fechado: o painel mostra ele todo aceso até a pausa acabar
+	_mostrar_grupo(grupo, grupo.size())
 	_feitos = 0
 	if ETAPA.has(seq.rodada):
 		drac.marcar_icone(ETAPA[seq.rodada])

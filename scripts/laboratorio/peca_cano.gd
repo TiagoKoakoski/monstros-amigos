@@ -8,6 +8,7 @@ const LADO := 170.0
 var _cano: Sprite2D
 var _agua: Sprite2D
 var _rot := 0
+var cheia := false
 
 
 func configurar(tipo: String, rot: int) -> void:
@@ -31,9 +32,19 @@ func girar_para(rot: int) -> void:
 
 
 func encher(atraso: float) -> void:
+	if cheia and atraso == 0.0:
+		return
+	cheia = true
 	var t := create_tween()
 	t.tween_interval(atraso)
 	t.tween_property(_agua, "modulate:a", 1.0, 0.25)
+
+
+func esvaziar() -> void:
+	if not cheia:
+		return
+	cheia = false
+	create_tween().tween_property(_agua, "modulate:a", 0.0, 0.2)
 
 
 func contem(p: Vector2) -> bool:

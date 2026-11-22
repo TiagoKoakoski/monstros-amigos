@@ -21,7 +21,10 @@ func _rodar() -> void:
 	for t: String in ["teste_alcapao_fechado_sem_progresso", "teste_alcapao_aberto_com_progresso",
 			"teste_alcapao_fora_do_caminho", "teste_laboratorio_marca_progresso", "teste_plop_nao_cala_o_vagalume",
 			"teste_caminho_pro_alcapao_sai_da_sala", "teste_passar_correndo_nao_gira", "teste_parado_gira",
-			"teste_armadilha_nao_cala_o_vagalume", "teste_formas_borda", "teste_formas_vagalume"]:
+			"teste_armadilha_nao_cala_o_vagalume", "teste_formas_borda", "teste_formas_vagalume",
+			"teste_laco_azul_vermelho_nao_cala_o_vagalume", "teste_analogico_devagar_nao_gira",
+			"teste_painel_mostra_grupo_feito_na_pausa", "teste_cano_certo_vagalume_segue",
+			"teste_corredor_passa_na_frente_da_maquina"]:
 		if await call(t) != true:
 			falhou += 1
 			push_error("FALHOU %s: não terminou" % t)
@@ -198,4 +201,70 @@ func teste_formas_vagalume() -> bool:
 	igual(f.alvo(), f._meio, "chegando pela porta: primeiro o meio (a diagonal pisaria noutro botão)")
 	_fora(l)
 	Jogo.progresso.apagar()
+	return true
+
+
+func teste_laco_azul_vermelho_nao_cala_o_vagalume() -> bool:
+	var l := await _cena(Jogo.LABORATORIO) as Laboratorio
+	var p := l.atividades["pocoes"] as Pocoes
+	l._tempo_sem_progresso = 0.0
+	for i in 20:
+		l._tempo_sem_progresso += 1.0
+		p._pegar("azul")
+		p._colocar("azul")  # ajuda (verde)...
+		p._pegar("vermelho")
+		p._colocar("vermelho")  # ...mas vira plop: não avançou de verdade
+	igual(l.tempo_sem_progresso() >= 12.0, true, "laço azul + vermelho: vaga-lume ainda vem")
+	_fora(l)
+	Jogo.progresso.apagar()
+	return true
+
+
+func teste_analogico_devagar_nao_gira() -> bool:
+	var l := await _cena(Jogo.LABORATORIO) as Laboratorio
+	var k := l.atividades["canos"] as Canos
+	var cel := Vector2i(0, 0)
+	var antes := k.canos.rot(cel)
+	var de := k.centro(cel) - Vector2(120, 0)
+	for i in 80:
+		k.checar(de + Vector2(3.0 * i, 0))  # ~180 px/s: analógico meio inclinado
+	igual(k.canos.rot(cel), antes, "andando devagar por cima: não gira")
+	_fora(l)
+	Jogo.progresso.apagar()
+	return true
+
+
+func teste_painel_mostra_grupo_feito_na_pausa() -> bool:
+	var l := await _cena(Jogo.LABORATORIO) as Laboratorio
+	var f := l.atividades["formas"] as Formas
+	var grupo := f.seq.sequencia()
+	f.checar(f._meio)
+	f.checar(f.botoes[grupo[0]].global_position)
+	igual(f.fase, "pausa", "fechou o grupo: pausa")
+	igual(f.painel_grupo, grupo, "na pausa o painel mostra o grupo que acabou")
+	igual(f.painel_feitos, grupo.size(), "todo aceso")
+	_fora(l)
+	Jogo.progresso.apagar()
+	return true
+
+
+func teste_cano_certo_vagalume_segue() -> bool:
+	var l := await _cena(Jogo.LABORATORIO) as Laboratorio
+	var k := l.atividades["canos"] as Canos
+	l.guia.guiar(Vector2.ZERO, Vector2(100, 0))
+	l._tempo_sem_progresso = 20.0
+	var cel := Vector2i(0, 0)
+	while not k.canos.certa(cel):
+		k._girar(cel)
+	igual(l.guia.ativo(), true, "peça ficou certa com o vaga-lume aparecendo: ele continua (vai pra próxima)")
+	igual(k.pecas[cel].cheia, true, "peça certa ligada na torneira já mostra água")
+	igual(k.pecas[Vector2i(2, 0)].cheia, false, "peça ainda errada continua seca")
+	_fora(l)
+	Jogo.progresso.apagar()
+	return true
+
+
+func teste_corredor_passa_na_frente_da_maquina() -> bool:
+	# a máquina fica acima do corredor Poções <-> Canos: a criança passa na frente, nunca atrás
+	igual(Laboratorio.MAQUINA.y < Laboratorio.VAOS["pocoes"].position.y, true, "pés da máquina acima do corredor")
 	return true

@@ -20,6 +20,9 @@ var baldes: Dictionary[String, Vector2] = {}
 var caldeirao := Vector2.ZERO
 var _tinta: Polygon2D
 var _auto_plop := false
+## quantas cores certas já estiveram juntas no caldeirão neste pedido: só
+## passar disso conta como avanço (azul, vermelho, plop, azul... não conta)
+var _melhor := 0
 
 
 func montar() -> void:
@@ -95,6 +98,7 @@ func _pegar(cor: String) -> void:
 func _colocar(cor: String) -> void:
 	var ajudou := pocoes.ajuda(cor)
 	var antes := pocoes.caldeirao.duplicate()
+	var certas := antes.size() + 1 if ajudou else 0
 	var frasco := mapa.tirar_da_mao()
 	if frasco:
 		frasco.reparent(self, true)
@@ -103,7 +107,11 @@ func _colocar(cor: String) -> void:
 		t.tween_property(frasco, "scale", Vector2.ZERO, 0.2)
 		t.tween_callback(frasco.queue_free)
 	var r := pocoes.colocar(cor)
-	if ajudou or r == "certo" or r == "fim":
+	if r == "certo" or r == "fim":
+		_melhor = 0
+		mapa.progresso_feito()
+	elif certas > _melhor:
+		_melhor = certas
 		mapa.progresso_feito()
 	match r:
 		"dentro":
