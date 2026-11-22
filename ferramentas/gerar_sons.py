@@ -125,6 +125,58 @@ def main() -> None:
     musica = normaliza(musica, PICO * 0.8) + palma(total, [c * 8 * colcheia + k * 2 * colcheia for c in range(8) for k in (1, 3)])
     salvar(normaliza(musica, PICO * 0.85), saida / "musica_festa.wav")
 
+    castelo(saida)
+
+
+def ruido_madeira(dur: float, semente: int = 3) -> np.ndarray:
+    """Batida abafada de madeira: ruído filtrado com ataque suave."""
+    n = int(SR * dur)
+    t = np.arange(n) / SR
+    rng = np.random.default_rng(semente)
+    r = np.convolve(rng.standard_normal(n), np.ones(40) / 40, mode="same")
+    return r * np.clip(t / 0.012, 0, 1) * np.exp(-t * 30)
+
+
+def castelo(saida: Path) -> None:
+    """Sons da fase 2 (dentro do castelo)."""
+    # notas dos ladrilhos: vermelho, azul, amarelo, verde (pentatônica, sem dissonância)
+    for i, nota in enumerate(["C5", "D5", "E5", "G5"]):
+        salvar(normaliza(sino(freq(nota), 0.9, 3.5), PICO * 0.85), saida / f"nota_{i}.wav")
+    salvar(normaliza(sequencia(["C5", "E5", "G5", "C6", "E6"], 0.08, 1.2, decai=4)), saida / "rodada.wav")
+
+    # porta abrindo: sino grave descendo + arrasto suave
+    porta = sequencia(["G4", "E4", "C4"], 0.18, 1.2, decai=3.5)
+    t = np.arange(len(porta)) / SR
+    rng = np.random.default_rng(5)
+    arrasto = np.convolve(rng.standard_normal(len(porta)), np.ones(120) / 120, mode="same")
+    arrasto *= np.clip(t / 0.15, 0, 1) * np.exp(-t * 3.5) * 1.6
+    salvar(normaliza(porta + arrasto, PICO * 0.8), saida / "porta.wav")
+
+    salvar(normaliza(sequencia(["E6", "G6", "E6", "C7"], 0.05, 0.7, decai=8), PICO * 0.6), saida / "chave.wav")
+    salvar(normaliza(sequencia(["C4", "C4"], 0.14, 0.5, decai=9), PICO * 0.6), saida / "fechadura.wav")
+    salvar(normaliza(sequencia(["G5", "D6"], 0.05, 0.9, decai=5) + 0.4 * sino(freq("G6"), 0.9, 6)), saida / "vela.wav")
+    salvar(normaliza(ruido_madeira(0.5) * 2.0 + 0.6 * sino(freq("C4"), 0.5, 9), PICO * 0.85), saida / "encaixe.wav")
+
+    # filhote: "auf" fofinho = glissando rápido de sino agudo
+    dur = 0.35
+    t = np.arange(int(SR * dur)) / SR
+    f = 900 + 500 * np.exp(-t * 18)
+    fase = 2 * np.pi * np.cumsum(f) / SR
+    au = (np.sin(fase) + 0.3 * np.sin(2 * fase)) * np.clip(t / 0.012, 0, 1) * np.exp(-t * 9)
+    salvar(normaliza(np.concatenate([au, np.zeros(int(SR * 0.05)), au * 0.7]), PICO * 0.6), saida / "filhote.wav")
+
+    # música do castelo: Fá maior, 76 bpm, 8 compassos, calma
+    bpm = 76
+    sem = 60 / bpm
+    melodia = ["F5", "A5", "C6", "A5", "G5", "E5", "F5", None, "A5", "C6", "D6", "C6", "A5", "G5", "F5", None,
+               "D5", "F5", "A5", "G5", "E5", "G5", "C5", None, "F5", "G5", "A5", "G5", "F5", None, None, None]
+    baixo = ["F3", "C3", "F3", "C3", "D3", "C3", "Bb2", "C3"]
+    baixo = [b.replace("Bb2", "A#2") for b in baixo]
+    ev = [(i * sem, n, 1.8, 0.9, 2.8) for i, n in enumerate(melodia) if n]
+    ev += [(c * 4 * sem, b, 3.2, 0.6, 1.3) for c, b in enumerate(baixo)]
+    ev += [(c * 4 * sem + 2 * sem, b[:-1] + str(int(b[-1]) + 1), 1.6, 0.22, 2.2) for c, b in enumerate(baixo)]
+    salvar(normaliza(laco(ev, 32 * sem), PICO * 0.7), saida / "musica_castelo.wav")
+
 
 if __name__ == "__main__":
     main()
