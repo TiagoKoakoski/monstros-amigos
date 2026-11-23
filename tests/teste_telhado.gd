@@ -210,6 +210,13 @@ func teste_rolagem_ponto_de_empurrar() -> bool:
 	# criança do lado do ninho, perto: dá a volta por um lado
 	var desvio: Vector2 = R.ponto_de_empurrar(bola, ninho, Vector2(3340, 1700), CAMPO)
 	igual(absf(desvio.x - bola.x) >= 150.0, true, "do lado do ninho: desvia de lado (%s)" % desvio)
+	# chegou no desvio (de lado da bola): agora vai pra trás dela
+	var depois: Vector2 = R.ponto_de_empurrar(bola, ninho, desvio, CAMPO)
+	igual(depois.is_equal_approx(Vector2(3300, 1930)), true, "do desvio vai pra trás da bola (%s)" % depois)
+	# canto de baixo à direita: parado ao lado da bola (um tico pro lado do ninho), vai pra trás dela
+	var canto := Vector2(CAMPO.end.x, CAMPO.end.y)
+	var de_lado: Vector2 = R.ponto_de_empurrar(canto, Vector2(3200, 1420), Vector2(3607, 2105), CAMPO)
+	igual(de_lado.distance_to(canto + Vector2(85, 98)) < 5.0, true, "no canto: vai pra trás da bola (%s)" % de_lado)
 	# bola encostada no limite de baixo: o ponto fica dentro da área da criança
 	var no_canto: Vector2 = R.ponto_de_empurrar(Vector2(3300, CAMPO.end.y), ninho, Vector2(3300, 1500), CAMPO)
 	igual(CAMPO.grow(150.0).has_point(no_canto), true, "ponto dentro de onde a criança anda")

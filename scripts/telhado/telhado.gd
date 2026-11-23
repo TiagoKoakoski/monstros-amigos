@@ -28,7 +28,7 @@ const VAOS := {
 	"ovelhas": Cemiterio.VAOS["arena"],
 }
 ## cada área entra aqui quando fica pronta
-const ORDEM: Array[String] = ["estrelas", "constelacoes"]
+const ORDEM: Array[String] = ["estrelas", "constelacoes", "planetas"]
 const CHAVE_DA_SALA := {"estrelas": "azul", "constelacoes": "verde", "planetas": "laranja"}
 const PORTAS := {"constelacoes": "azul", "planetas": "verde", "ovelhas": "laranja"}
 const CORES_PORTA := {"constelacoes": Color("#4aa3ff"), "planetas": Color("#5bd17a"), "ovelhas": Color("#ff9f43")}
@@ -69,6 +69,8 @@ func nova_atividade(id: String) -> Atividade:
 			return EstrelasCadentes.new()
 		"constelacoes":
 			return Constelacoes.new()
+		"planetas":
+			return Planetinhas.new()
 	return null
 
 
@@ -153,4 +155,4 @@ func marcos_obrigatorios() -> Array[String]:
 		return ["festa_telhado", "pode_recomecar"]
 	return ["inicio_telhado", "guia", "estrela_1", "estrela_6", "estrelas", "chave_azul", "trancada",
 		"abriu_constelacoes", "estrela_errada", "desenho_1", "desenho_2", "desenho_3", "constelacoes", "chave_verde",
-		"festa_telhado", "pode_recomecar"]
+		"abriu_planetas", "ninho_1", "ninho_2", "ninho_3", "planetas", "chave_laranja", "festa_telhado", "pode_recomecar"]
