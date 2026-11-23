@@ -24,7 +24,9 @@ func _rodar() -> void:
 			"teste_estrela_errada_nao_cala_o_vagalume", "teste_constelacoes_andando_termina",
 			"teste_planetinha_sai_do_canto", "teste_ninho_de_outra_cor_nao_pega", "teste_empurrar_nao_cala_o_vagalume",
 			"teste_ovelhinha_solta_fica_na_area", "teste_ovelhinha_segue_pelo_portao", "teste_ovelhinha_mais_lenta",
-			"teste_ovelhinhas_andando_termina", "teste_festa_com_os_amigos"]:
+			"teste_ovelhinhas_andando_termina", "teste_festa_com_os_amigos",
+			"teste_planetinha_piloto_de_qualquer_lugar", "teste_vagalume_planetinha_nao_aponta_na_crianca",
+			"teste_ovelhinha_nao_cruza_cercado"]:
 		if await call(t) != true:
 			falhou += 1
 			push_error("FALHOU %s: não terminou" % t)
@@ -326,5 +328,75 @@ func teste_festa_com_os_amigos() -> bool:
 	igual(nomes, ["dracula", "fantasma_mamae", "fantasmao", "frankenstein", "lobisomem", "mumia"], "os amigos das outras fases vieram")
 	igual(t.em_festa, true, "em festa")
 	igual(t.ceu.festa_na_frente(), true, "na festa constelações e fogos ficam na frente do telhado")
+	_fora(t)
+	return true
+
+
+## Revisão: com a bola e a criança em qualquer lugar, o piloto não fica
+## indo e voltando entre dois pontos (o vaga-lume usa a mesma conta).
+func teste_planetinha_piloto_de_qualquer_lugar() -> bool:
+	var t := await _cena(Jogo.TELHADO) as Telhado
+	var pl := t.atividades["planetas"] as Planetinhas
+	var anda := pl.area.grow(-38.0)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 2611
+	var casos: Array = [[Vector2(2960.4, 1884.2), Vector2(2944.6, 1308.8)]]  # o caso que a revisão achou
+	for k in 120:
+		casos.append([Vector2(rng.randf_range(pl.limites.position.x, pl.limites.end.x), rng.randf_range(pl.limites.position.y, pl.limites.end.y)),
+			Vector2(rng.randf_range(anda.position.x, anda.end.x), rng.randf_range(anda.position.y, anda.end.y))])
+	var presos := 0
+	for caso: Array in casos:
+		for j in pl.planetas.size():
+			pl.planetas[j].no_ninho = j != 0
+			pl.planetas[j].vel = Vector2.ZERO
+		pl._auto_i = -1
+		pl._no_ninho = 0
+		pl.planetas[0].global_position = caso[0]
+		t.jogador.global_position = caso[1]
+		var quadros := 0
+		while not pl.planetas[0].no_ninho and quadros < 60 * 40:
+			t.jogador.global_position = t.jogador.global_position.move_toward(pl.alvo_auto(), 6.0).clamp(anda.position, anda.end)
+			pl.checar(t.jogador.global_position)
+			quadros += 1
+		if not pl.planetas[0].no_ninho:
+			presos += 1
+			push_error("preso: bola %s criança %s" % [caso[0], caso[1]])
+	igual(presos, 0, "121 começos: o piloto sempre leva o planetinha pro ninho")
+	_fora(t)
+	return true
+
+
+## Revisão: parado no ponto de empurrar, o vaga-lume aponta pra frente (não pra cabeça dele).
+func teste_vagalume_planetinha_nao_aponta_na_crianca() -> bool:
+	var t := await _cena(Jogo.TELHADO) as Telhado
+	var pl := t.atividades["planetas"] as Planetinhas
+	var bola := pl.planetas[0].global_position
+	t.jogador.global_position = Rolagem.ponto_de_empurrar(bola, pl.ninhos[0], bola + Vector2(0, 300), pl.limites)
+	var d := pl.alvo().distance_to(t.jogador.global_position)
+	igual(d > 80.0, true, "no ponto de empurrar: vaga-lume aponta adiante (%.0f px)" % d)
+	_fora(t)
+	return true
+
+
+## Revisão: passeando, a ovelhinha solta nunca atravessa o cercadinho.
+func teste_ovelhinha_nao_cruza_cercado() -> bool:
+	var t := await _cena(Jogo.TELHADO) as Telhado
+	var ov := t.atividades["ovelhas"] as Ovelhinhas
+	var cruzou := 0
+	for semente in range(1, 41):
+		var b := Ovelhinha.new()
+		b.configurar(semente)
+		t.add_child(b)
+		b.global_position = ov.area.position + Vector2(300, 300)
+		for k in 60:
+			var de := b.global_position
+			var para := b._sortear(ov.limites, ov.cercado)
+			for f in 21:
+				if ov.cercado.has_point(de.lerp(para, f / 20.0)):
+					cruzou += 1
+					break
+			b.global_position = para
+		b.free()
+	igual(cruzou, 0, "2400 passeios sorteados: nenhum caminho passa pelo cercadinho")
 	_fora(t)
 	return true

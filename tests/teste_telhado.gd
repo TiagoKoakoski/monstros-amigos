@@ -208,15 +208,20 @@ func teste_rolagem_ponto_de_empurrar() -> bool:
 	var p: Vector2 = R.ponto_de_empurrar(bola, ninho, Vector2(3300, 2000), CAMPO)
 	igual(p.is_equal_approx(Vector2(3300, 1930)), true, "atrás da bola, do lado oposto ao ninho (%s)" % p)
 	# criança do lado do ninho, perto: dá a volta por um lado
-	var desvio: Vector2 = R.ponto_de_empurrar(bola, ninho, Vector2(3340, 1700), CAMPO)
-	igual(absf(desvio.x - bola.x) >= 150.0, true, "do lado do ninho: desvia de lado (%s)" % desvio)
-	# chegou no desvio (de lado da bola): agora vai pra trás dela
+	var crianca := Vector2(3340, 1700)
+	var sinal: float = R.desvio(bola, ninho, crianca, CAMPO, 0.0)
+	igual(sinal != 0.0, true, "do lado do ninho: desvia")
+	var desvio: Vector2 = R.ponto_de_empurrar(bola, ninho, crianca, CAMPO, sinal)
+	igual(absf(desvio.x - bola.x) >= 150.0, true, "desvia de lado (%s)" % desvio)
+	# o lado fica escolhido até chegar (não troca a cada passo)
+	igual(R.desvio(bola, ninho, Vector2(3300, 1690), CAMPO, sinal), sinal, "na linha bola→ninho: mesmo lado")
+	# chegou no desvio: agora vai pra trás dela
+	igual(R.desvio(bola, ninho, desvio, CAMPO, sinal), 0.0, "chegou no desvio: acabou o desvio")
 	var depois: Vector2 = R.ponto_de_empurrar(bola, ninho, desvio, CAMPO)
 	igual(depois.is_equal_approx(Vector2(3300, 1930)), true, "do desvio vai pra trás da bola (%s)" % depois)
-	# canto de baixo à direita: parado ao lado da bola (um tico pro lado do ninho), vai pra trás dela
+	# canto de baixo à direita: parado ao lado da bola (um tico pro lado do ninho), não desvia
 	var canto := Vector2(CAMPO.end.x, CAMPO.end.y)
-	var de_lado: Vector2 = R.ponto_de_empurrar(canto, Vector2(3200, 1420), Vector2(3607, 2105), CAMPO)
-	igual(de_lado.distance_to(canto + Vector2(85, 98)) < 5.0, true, "no canto: vai pra trás da bola (%s)" % de_lado)
+	igual(R.desvio(canto, Vector2(3200, 1420), Vector2(3607, 2105), CAMPO, 0.0), 0.0, "no canto, de lado: sem desvio")
 	# bola encostada no limite de baixo: o ponto fica dentro da área da criança
 	var no_canto: Vector2 = R.ponto_de_empurrar(Vector2(3300, CAMPO.end.y), ninho, Vector2(3300, 1500), CAMPO)
 	igual(CAMPO.grow(150.0).has_point(no_canto), true, "ponto dentro de onde a criança anda")

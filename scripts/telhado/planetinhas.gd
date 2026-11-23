@@ -18,6 +18,8 @@ var _encostado: Array[bool] = []
 var _no_ninho := 0
 ## planetinha que o piloto está levando (fica nele até encaixar)
 var _auto_i := -1
+## lado do desvio de cada planetinha (Rolagem.desvio): fica escolhido até chegar
+var _sinal: Array[float] = []
 
 
 func montar() -> void:
@@ -41,6 +43,7 @@ func montar() -> void:
 		mapa.no_mundo(pl)
 		planetas.append(pl)
 		_encostado.append(false)
+		_sinal.append(0.0)
 	lua = Monstro.new()
 	lua.configurar("dona_lua", "", load("res://arte/dona_lua.svg") as Texture2D, icones[0])
 	lua.mostrar_varios(icones)
@@ -102,24 +105,31 @@ func _mais_perto(p: Vector2) -> int:
 	return melhor
 
 
-## De onde empurrar o planetinha solto mais perto pro ninho dele.
+## Pra onde andar pra levar o planetinha `i` pro ninho: dar a volta (se
+## precisar), ficar atrás dele e, chegando lá, atravessar rumo ao ninho.
+func _rumo(i: int, p: Vector2) -> Vector2:
+	var bola := planetas[i].global_position
+	_sinal[i] = Rolagem.desvio(bola, ninhos[i], p, limites, _sinal[i])
+	var ponto := Rolagem.ponto_de_empurrar(bola, ninhos[i], p, limites, _sinal[i])
+	if _sinal[i] == 0.0 and p.distance_to(ponto) < 50.0:
+		return bola + (ninhos[i] - bola).normalized() * 120.0
+	return ponto
+
+
+## Vaga-lume: o caminho pro planetinha solto mais perto (nunca a cabeça da criança).
 func alvo() -> Vector2:
 	var p := mapa.jogador.global_position
 	var i := _mais_perto(p)
 	if i == -1:
 		return lua.global_position
-	return Rolagem.ponto_de_empurrar(planetas[i].global_position, ninhos[i], p, limites)
+	return _rumo(i, p)
 
 
-## Piloto: vai pro ponto de empurrar e, chegando, atravessa o planetinha rumo ao ninho.
+## Piloto: o mesmo caminho, mas fica no mesmo planetinha até encaixar.
 func alvo_auto() -> Vector2:
 	var p := mapa.jogador.global_position
 	if _auto_i == -1 or planetas[_auto_i].no_ninho:
 		_auto_i = _mais_perto(p)
 	if _auto_i == -1:
 		return lua.global_position
-	var bola := planetas[_auto_i].global_position
-	var ponto := Rolagem.ponto_de_empurrar(bola, ninhos[_auto_i], p, limites)
-	if p.distance_to(ponto) < 50.0:
-		return bola + (ninhos[_auto_i] - bola).normalized() * 120.0
-	return ponto
+	return _rumo(_auto_i, p)

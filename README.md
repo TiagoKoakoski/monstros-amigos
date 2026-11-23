@@ -147,8 +147,8 @@ godot --headless --path . --script res://tests/teste_laboratorio.gd  # regras do
 godot --headless --path . res://tests/teste_laboratorio_cena.tscn     # alçapão e laboratório montados (32)
 godot --headless --path . --script res://tests/teste_cemiterio.gd    # regras do cemitério (110)
 godot --headless --path . res://tests/teste_cemiterio_cena.tscn       # porta dos fundos e cemitério montados (38)
-godot --headless --path . --script res://tests/teste_telhado.gd      # regras do telhado (83)
-godot --headless --path . res://tests/teste_telhado_cena.tscn         # escada da torre e telhado montados (56)
+godot --headless --path . --script res://tests/teste_telhado.gd      # regras do telhado (86)
+godot --headless --path . res://tests/teste_telhado_cena.tscn         # escada da torre e telhado montados (59)
 godot --path . -- --autoplay --capturas=/tmp/fotos                     # joga o jogo inteiro sozinho e fotografa (~10 min; a pasta tem que existir)
 godot --path . -- --fase=castelo --autoplay                            # começa direto no castelo
 godot --path . -- --fase=castelo --autoplay --sala=caixas              # testa uma sala só (as anteriores dadas por feitas)

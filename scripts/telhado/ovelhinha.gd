@@ -78,9 +78,19 @@ func _sortear(limites: Rect2, cercado: Rect2) -> Vector2:
 	var evitar := cercado.grow(FOLGA_CERCADO)
 	for k in 30:
 		var p := Vector2(_rng.randf_range(limites.position.x, limites.end.x), _rng.randf_range(limites.position.y, limites.end.y))
-		if not evitar.has_point(p) and p.distance_to(global_position) > 150.0:
+		if not _cruza(global_position, p, evitar) and p.distance_to(global_position) > 150.0:
 			return p
 	return global_position
+
+
+## O caminho reto de `de` até `para` passa por `r`? (o cercadinho fica num
+## canto: dois pontos fora dele podem ter o caminho por dentro)
+static func _cruza(de: Vector2, para: Vector2, r: Rect2) -> bool:
+	var passos := int(de.distance_to(para) / 20.0) + 1
+	for k in passos + 1:
+		if r.has_point(de.lerp(para, float(k) / passos)):
+			return true
+	return false
 
 
 ## Pulinho brincalhão pra longe da criança (uma vez só; quem decide é a sala).
@@ -91,7 +101,7 @@ func pular_longe(crianca: Vector2, limites: Rect2, cercado: Rect2) -> void:
 		dir = Vector2.RIGHT
 	for ang: float in [0.0, 0.6, -0.6, 1.3, -1.3, 2.0, -2.0]:
 		var p := (global_position + dir.rotated(ang) * DISTANCIA_PULO).clamp(limites.position, limites.end)
-		if not evitar.has_point(p) and p.distance_to(global_position) > 150.0:
+		if not _cruza(global_position, p, evitar) and p.distance_to(global_position) > 150.0:
 			_pular(p)
 			return
 

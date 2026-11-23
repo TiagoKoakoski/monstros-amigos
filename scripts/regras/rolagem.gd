@@ -56,17 +56,31 @@ static func encaixa(bola: Vector2, ninho: Vector2) -> bool:
 
 
 ## Onde a criança deve ficar pra empurrar a bola pro ninho: atrás dela (do
-## lado oposto ao ninho). Se a criança está do lado do ninho, perto da bola,
-## primeiro dá a volta por um lado (pra não empurrar pro lado errado).
-static func ponto_de_empurrar(bola: Vector2, ninho: Vector2, crianca: Vector2, limites: Rect2) -> Vector2:
+## lado oposto ao ninho) — ou, com `sinal` (±1, de desvio()), dando a volta
+## por aquele lado.
+static func ponto_de_empurrar(bola: Vector2, ninho: Vector2, crianca: Vector2, limites: Rect2, sinal := 0.0) -> Vector2:
 	var anda := limites.grow(ALCANCE)
 	var pro_ninho := (ninho - bola).normalized()
-	var de_la := crianca - bola
-	if de_la.dot(pro_ninho) > LADO_DO_NINHO and de_la.length() < 260.0:
-		var lado := pro_ninho.orthogonal()
-		var sinal := 1.0 if lado.dot(de_la) >= 0.0 else -1.0
-		var p := (bola + lado * sinal * DESVIO).clamp(anda.position, anda.end)
-		if p.distance_to(bola) < 150.0:  # parede desse lado: vai pelo outro
-			p = (bola - lado * sinal * DESVIO).clamp(anda.position, anda.end)
-		return p
+	if sinal != 0.0:
+		return (bola + pro_ninho.orthogonal() * sinal * DESVIO).clamp(anda.position, anda.end)
 	return (bola - pro_ninho * ATRAS).clamp(anda.position, anda.end)
+
+
+## Lado do desvio (±1) ou 0 (sem desvio). Guarda a escolha `atual` até a
+## criança chegar no ponto do desvio ou sair do lado do ninho: sem isso, perto
+## da linha bola→ninho, o ponto trocaria de lado a cada quadro.
+static func desvio(bola: Vector2, ninho: Vector2, crianca: Vector2, limites: Rect2, atual: float) -> float:
+	var pro_ninho := (ninho - bola).normalized()
+	var de_la := crianca - bola
+	if atual != 0.0:
+		var chegou := crianca.distance_to(ponto_de_empurrar(bola, ninho, crianca, limites, atual)) < 50.0
+		if chegou or de_la.dot(pro_ninho) < 0.0 or de_la.length() > 320.0:
+			return 0.0
+		return atual
+	if de_la.dot(pro_ninho) <= LADO_DO_NINHO or de_la.length() >= 260.0:
+		return 0.0
+	var lado := pro_ninho.orthogonal()
+	var sinal := 1.0 if lado.dot(de_la) >= 0.0 else -1.0
+	if ponto_de_empurrar(bola, ninho, crianca, limites, sinal).distance_to(bola) < 150.0:
+		sinal = -sinal  # parede desse lado: vai pelo outro
+	return sinal
