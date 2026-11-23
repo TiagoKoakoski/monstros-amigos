@@ -28,7 +28,7 @@ const VAOS := {
 	"ovelhas": Cemiterio.VAOS["arena"],
 }
 ## cada área entra aqui quando fica pronta
-const ORDEM: Array[String] = ["estrelas", "constelacoes", "planetas"]
+const ORDEM: Array[String] = ["estrelas", "constelacoes", "planetas", "ovelhas"]
 const CHAVE_DA_SALA := {"estrelas": "azul", "constelacoes": "verde", "planetas": "laranja"}
 const PORTAS := {"constelacoes": "azul", "planetas": "verde", "ovelhas": "laranja"}
 const CORES_PORTA := {"constelacoes": Color("#4aa3ff"), "planetas": Color("#5bd17a"), "ovelhas": Color("#ff9f43")}
@@ -71,6 +71,8 @@ func nova_atividade(id: String) -> Atividade:
 			return Constelacoes.new()
 		"planetas":
 			return Planetinhas.new()
+		"ovelhas":
+			return Ovelhinhas.new()
 	return null
 
 
@@ -113,6 +115,16 @@ func festa_final() -> void:
 		t.tween_interval(0.8 + i * 0.25)
 		t.tween_property(m, "global_position", SALAO.get_center() + lugares[i % lugares.size()], 1.8).set_trans(Tween.TRANS_SINE)
 		t.tween_callback(m.dancar)
+	# as ovelhinhas também vêm e dançam em volta
+	var filhos: Array[Node2D] = []
+	for id: String in ordem:
+		if atividades[id].has_method("convidados"):
+			filhos.append_array(atividades[id].call("convidados"))
+	for j in filhos.size():
+		var a := TAU * j / filhos.size()
+		var t := create_tween()
+		t.tween_interval(1.0 + j * 0.15)
+		t.tween_property(filhos[j], "global_position", SALAO.get_center() + Vector2(cos(a) * 520.0, 60.0 + sin(a) * 260.0), 1.8).set_trans(Tween.TRANS_SINE)
 	ceu.festa()
 	comecar_festa(SALAO.get_center() + Vector2(0, -60), true)
 	marco("festa_telhado", 4.0)
@@ -155,4 +167,5 @@ func marcos_obrigatorios() -> Array[String]:
 		return ["festa_telhado", "pode_recomecar"]
 	return ["inicio_telhado", "guia", "estrela_1", "estrela_6", "estrelas", "chave_azul", "trancada",
 		"abriu_constelacoes", "estrela_errada", "desenho_1", "desenho_2", "desenho_3", "constelacoes", "chave_verde",
-		"abriu_planetas", "ninho_1", "ninho_2", "ninho_3", "planetas", "chave_laranja", "festa_telhado", "pode_recomecar"]
+		"abriu_planetas", "ninho_1", "ninho_2", "ninho_3", "planetas", "chave_laranja",
+		"abriu_ovelhas", "pulinho", "guardou_1", "guardou_4", "ovelhas", "festa_telhado", "pode_recomecar"]

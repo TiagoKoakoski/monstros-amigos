@@ -22,7 +22,9 @@ func _rodar() -> void:
 			"teste_escada_fora_do_caminho", "teste_telhado_marca_progresso", "teste_fundo_transparente_so_no_telhado",
 			"teste_parado_nao_pega_estrela", "teste_estrelas_andando_pega_todas",
 			"teste_estrela_errada_nao_cala_o_vagalume", "teste_constelacoes_andando_termina",
-			"teste_planetinha_sai_do_canto", "teste_ninho_de_outra_cor_nao_pega", "teste_empurrar_nao_cala_o_vagalume"]:
+			"teste_planetinha_sai_do_canto", "teste_ninho_de_outra_cor_nao_pega", "teste_empurrar_nao_cala_o_vagalume",
+			"teste_ovelhinha_solta_fica_na_area", "teste_ovelhinha_segue_pelo_portao", "teste_ovelhinha_mais_lenta",
+			"teste_ovelhinhas_andando_termina"]:
 		if await call(t) != true:
 			falhou += 1
 			push_error("FALHOU %s: não terminou" % t)
