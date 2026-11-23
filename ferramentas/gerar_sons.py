@@ -128,6 +128,7 @@ def main() -> None:
     castelo(saida)
     laboratorio(saida)
     cemiterio(saida)
+    telhado(saida)
 
 
 def ruido_madeira(dur: float, semente: int = 3) -> np.ndarray:
@@ -172,8 +173,8 @@ def castelo(saida: Path) -> None:
     sem = 60 / bpm
     melodia = ["F5", "A5", "C6", "A5", "G5", "E5", "F5", None, "A5", "C6", "D6", "C6", "A5", "G5", "F5", None,
                "D5", "F5", "A5", "G5", "E5", "G5", "C5", None, "F5", "G5", "A5", "G5", "F5", None, None, None]
-    baixo = ["F3", "C3", "F3", "C3", "D3", "C3", "Bb2", "C3"]
-    baixo = [b.replace("Bb2", "A#2") for b in baixo]
+    baixo = ["F3", "C3", "F3", "C3", "D3", "C3", "A#2", "C3"]
+    baixo = [b.replace("A#2", "A#2") for b in baixo]
     ev = [(i * sem, n, 1.8, 0.9, 2.8) for i, n in enumerate(melodia) if n]
     ev += [(c * 4 * sem, b, 3.2, 0.6, 1.3) for c, b in enumerate(baixo)]
     ev += [(c * 4 * sem + 2 * sem, b[:-1] + str(int(b[-1]) + 1), 1.6, 0.22, 2.2) for c, b in enumerate(baixo)]
@@ -305,6 +306,62 @@ def cemiterio(saida: Path) -> None:
         ev.append((c * passo + sem, acorde, 0.6, 0.2, 5.0))
         ev.append((c * passo + 2 * sem, acorde, 0.6, 0.2, 5.0))
     salvar(normaliza(laco(ev, total), PICO * 0.7), saida / "musica_cemiterio.wav")
+
+
+def telhado(saida: Path) -> None:
+    """Sons da fase 5 (telhado das estrelas): tudo suave, de dormir."""
+    # estrela pega: "plim" agudo com brilho
+    salvar(normaliza(sequencia(["E6", "B6", "E7"], 0.05, 0.8, decai=6), PICO * 0.6), saida / "estrela.wav")
+    # estrela caindo: brilho descendo baixinho
+    queda = glissando(2200, 900, 0.8, 3) * 0.5 + sequencia(["C7", "G6", "E6"], 0.18, 0.8, decai=8) * 0.4
+    salvar(normaliza(queda, PICO * 0.4), saida / "queda.wav")
+    # notas das constelações: escala de Dó subindo, sino
+    for i, n in enumerate(["C5", "D5", "E5", "F5", "G5", "A5", "B5", "C6"]):
+        salvar(normaliza(sino(freq(n), 1.2, 3.0, 0.4), PICO * 0.65), saida / f"astro_{i}.wav")
+    # constelação pronta: arpejo e acorde brilhando
+    pronta = sequencia(["C5", "E5", "G5", "C6", "E6"], 0.1, 2.2, decai=3)
+    acorde = sum(sino(freq(n), 1.6, 2.2) for n in ["C6", "E6", "G6"]) * 0.35
+    pronta[int(0.5 * SR): int(0.5 * SR) + len(acorde)] += acorde[: len(pronta) - int(0.5 * SR)]
+    salvar(normaliza(pronta, PICO * 0.7), saida / "constelacao.wav")
+    # planetinha rolando: ronquinho grave e curto
+    dur = 0.5
+    t = np.arange(int(SR * dur)) / SR
+    rolar = ruido_suave(dur, 60, 31) * np.clip(t / 0.05, 0, 1) * np.exp(-t * 5) + 0.4 * glissando(160, 110, dur, 5)
+    salvar(normaliza(rolar, PICO * 0.45), saida / "rolar.wav")
+    # méé fofo: tom médio tremido, baixinho
+    dur = 0.7
+    t = np.arange(int(SR * dur)) / SR
+    f = 620 * (1 + 0.04 * np.sin(2 * np.pi * 9 * t))
+    fase = 2 * np.pi * np.cumsum(f) / SR
+    mee = (np.sin(fase) + 0.3 * np.sin(2 * fase) + 0.15 * np.sin(3 * fase)) * np.clip(t / 0.06, 0, 1) * np.clip((dur - t) / 0.25, 0, 1)
+    salvar(normaliza(mee, PICO * 0.5), saida / "mee.wav")
+    # boing: sobe e desce (ovelhinha pulando a cerca)
+    boing = np.concatenate([glissando(300, 700, 0.18, 2), glissando(700, 420, 0.3, 6)])
+    salvar(normaliza(boing, PICO * 0.55), saida / "boing.wav")
+    # fogos de estrelinha: brilhos espalhados, nada de estouro
+    rng = np.random.default_rng(41)
+    fogos = np.zeros(int(SR * 2.0))
+    for k in range(14):
+        n = ["C6", "E6", "G6", "C7", "E7"][rng.integers(0, 5)]
+        s = sino(freq(n), 0.6, 7, 0.5)
+        i = int(rng.uniform(0, 1.4) * SR)
+        fogos[i:i + len(s)] += s * rng.uniform(0.3, 0.7)
+    salvar(normaliza(fogos, PICO * 0.5), saida / "fogos.wav")
+    # canção de ninar: 3/4, 72 bpm, Fá maior, caixinha de música bem calma
+    bpm = 72
+    sem = 60 / bpm
+    melodia = ["C5", "F5", "A5", "G5", "F5", None, "E5", "G5", "C6", "A5", None, None,
+               "A5", "G5", "F5", "D5", "F5", None, "E5", "G5", "E5", "F5", None, None,
+               "C5", "F5", "A5", "C6", "A5", None, "A#5", "A5", "G5", "A5", None, None,
+               "F5", "E5", "D5", "C5", "E5", "G5", "F5", None, None, None, None, None]
+    baixo = ["F3", "C3", "D3", "C3", "F3", "A#2", "C3", "F3"]  # 2 compassos cada
+    ev = [(i * sem, n, 2.0, 0.8, 2.4) for i, n in enumerate(melodia) if n]
+    total = len(melodia) * sem
+    passo = total / len(baixo)
+    for c, b in enumerate(baixo):
+        ev.append((c * passo, b, 3.0, 0.5, 1.4))
+        ev.append((c * passo + 3 * sem, b, 2.0, 0.3, 1.8))
+    salvar(normaliza(laco(ev, total), PICO * 0.6), saida / "musica_telhado.wav")
 
 
 if __name__ == "__main__":

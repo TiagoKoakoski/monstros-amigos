@@ -170,7 +170,7 @@ func _entrar_no_castelo() -> void:
 		var falhas := _auto_falhas + verificar_fim_auto()
 		if not falhas.is_empty() or Jogo.marcos_globais.has("segunda_volta"):
 			if falhas.is_empty():
-				Jogo.marcos_globais["resumo"] = "jogo completo: jardim, castelo, laboratório, cemitério, festa, volta ao jardim com a porta aberta e entrada de novo"
+				Jogo.marcos_globais["resumo"] = "jogo completo: jardim, castelo, laboratório, cemitério, telhado, festa, volta ao jardim com a porta aberta e entrada de novo"
 			_sair_com(falhas)
 			return
 	Jogo.progresso.marcar_castelo_aberto()

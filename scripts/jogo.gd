@@ -8,12 +8,14 @@ extends Node
 ##   --fase=castelo        começa direto no castelo
 ##   --fase=laboratorio    começa direto no laboratório
 ##   --fase=cemiterio      começa direto no cemitério
+##   --fase=telhado        começa direto no telhado
 ##   --manter-progresso    não apaga o progresso de teste no começo
 
 const JARDIM := "res://scenes/jardim.tscn"
 const CASTELO := "res://scenes/castelo.tscn"
 const LABORATORIO := "res://scenes/laboratorio.tscn"
 const CEMITERIO := "res://scenes/cemiterio.tscn"
+const TELHADO := "res://scenes/telhado.tscn"
 const PROGRESSO_REAL := "user://progresso.cfg"
 const PROGRESSO_TESTE := "user://progresso_teste.cfg"
 
@@ -42,6 +44,8 @@ func _ready() -> void:
 			_fase_inicial = LABORATORIO
 		if a == "--fase=cemiterio":
 			_fase_inicial = CEMITERIO
+		if a == "--fase=telhado":
+			_fase_inicial = TELHADO
 	progresso = Progresso.new(PROGRESSO_TESTE if auto else PROGRESSO_REAL)
 	if auto and not args.has("--manter-progresso"):
 		progresso.apagar()
