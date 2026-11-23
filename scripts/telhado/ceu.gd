@@ -14,6 +14,9 @@ var _constelacoes: Array[Node2D] = []
 var _tempo := 0.0
 var _fogos: CPUParticles2D
 var _em_festa := false
+## na festa, as constelações e os fogos vêm pra cá (na frente do telhado:
+## com a câmera afastada o céu de trás quase não aparece)
+var _frente: CanvasLayer
 
 
 func _ready() -> void:
@@ -37,6 +40,9 @@ func _ready() -> void:
 	lua.texture = load("res://arte/lua_grande.svg") as Texture2D
 	lua.position = Vector2(1640, 200)
 	add_child(lua)
+	_frente = CanvasLayer.new()
+	_frente.layer = 2
+	add_child(_frente)
 	_fogos = CPUParticles2D.new()
 	_fogos.position = Vector2(960, 300)
 	_fogos.emitting = false
@@ -106,6 +112,17 @@ func constelacoes() -> int:
 ## Festa no céu: tudo brilha mais, as constelações crescem e os fogos de estrelinha começam.
 func festa() -> void:
 	_em_festa = true
+	_fogos.reparent(_frente)
 	_fogos.emitting = true
 	for c: Node2D in _constelacoes:
+		c.reparent(_frente)
 		create_tween().tween_property(c, "scale", Vector2.ONE * 1.5, 1.6).set_trans(Tween.TRANS_SINE)
+
+
+func festa_na_frente() -> bool:
+	if _fogos.get_parent() != _frente:
+		return false
+	for c: Node2D in _constelacoes:
+		if c.get_parent() != _frente:
+			return false
+	return true

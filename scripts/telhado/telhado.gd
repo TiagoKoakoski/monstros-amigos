@@ -36,7 +36,13 @@ const ALCAPAO := Vector2(1700, 1330)
 const TELHA := Color("#4f5d94")
 const TELHA_LINHA := Color("#475489")
 
+## amigos das outras fases que vêm pra festa no céu: [quem, item do balão]
+const AMIGOS := [["dracula", "nota"], ["frankenstein", "bolo"], ["mumia", "livro"], ["lobisomem", "filhote"],
+	["fantasma_mamae", "fantasminha"]]
+
 var ceu: Ceu
+## quem subiu pelo alçapão pra festa
+var amigos: Array[Node2D] = []
 
 
 func configurar_mapa() -> void:
@@ -125,9 +131,48 @@ func festa_final() -> void:
 		var t := create_tween()
 		t.tween_interval(1.0 + j * 0.15)
 		t.tween_property(filhos[j], "global_position", SALAO.get_center() + Vector2(cos(a) * 520.0, 60.0 + sin(a) * 260.0), 1.8).set_trans(Tween.TRANS_SINE)
+	_chamar_amigos()
 	ceu.festa()
 	comecar_festa(SALAO.get_center() + Vector2(0, -60), true)
 	marco("festa_telhado", 4.0)
+
+
+## Os amigos de todas as fases sobem pelo alçapão e dançam numa fila atrás.
+func _chamar_amigos() -> void:
+	var lista: Array[Node2D] = []
+	for par: Array in AMIGOS:
+		var m := Monstro.new()
+		m.configurar(par[0], "", load("res://arte/%s.svg" % par[0]) as Texture2D, load("res://arte/%s.svg" % par[1]) as Texture2D)
+		m.set_meta("quem", par[0])
+		lista.append(m)
+	var fantasmao := Visual.sprite_em_pe(load("res://arte/fantasmao.svg") as Texture2D)
+	var bonachao := Node2D.new()
+	bonachao.add_child(fantasmao)
+	bonachao.set_meta("quem", "fantasmao")
+	lista.append(bonachao)
+	for i in lista.size():
+		var a := lista[i]
+		a.position = ALCAPAO
+		a.scale = Vector2.ONE * 0.3
+		a.modulate.a = 0.0
+		no_mundo(a)
+		amigos.append(a)
+		var lugar := SALAO.get_center() + Vector2(-550.0 + 220.0 * i, -400.0 + (i % 2) * 40.0)
+		var t := create_tween()
+		t.tween_interval(1.4 + i * 0.35)
+		t.tween_property(a, "modulate:a", 1.0, 0.3)
+		t.parallel().tween_property(a, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		t.tween_property(a, "position", lugar, 1.4).set_trans(Tween.TRANS_SINE)
+		if a is Monstro:
+			var m := a as Monstro
+			t.tween_callback(func() -> void:
+				m.concluir()
+				m.dancar())
+		else:
+			t.tween_callback(func() -> void:
+				var balanca := create_tween().set_loops()
+				balanca.tween_property(fantasmao, "position:y", -40.0, 0.5).set_trans(Tween.TRANS_SINE)
+				balanca.tween_property(fantasmao, "position:y", 0.0, 0.5).set_trans(Tween.TRANS_SINE))
 
 
 func ao_recomecar() -> void:

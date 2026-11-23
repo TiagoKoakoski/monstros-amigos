@@ -24,7 +24,7 @@ func _rodar() -> void:
 			"teste_estrela_errada_nao_cala_o_vagalume", "teste_constelacoes_andando_termina",
 			"teste_planetinha_sai_do_canto", "teste_ninho_de_outra_cor_nao_pega", "teste_empurrar_nao_cala_o_vagalume",
 			"teste_ovelhinha_solta_fica_na_area", "teste_ovelhinha_segue_pelo_portao", "teste_ovelhinha_mais_lenta",
-			"teste_ovelhinhas_andando_termina"]:
+			"teste_ovelhinhas_andando_termina", "teste_festa_com_os_amigos"]:
 		if await call(t) != true:
 			falhou += 1
 			push_error("FALHOU %s: não terminou" % t)
@@ -311,5 +311,20 @@ func teste_ovelhinhas_andando_termina() -> bool:
 		ov._physics_process(1.0 / 60.0)
 		ov.checar(t.jogador.global_position)
 	igual(ov.terminada(), true, "4 ovelhinhas guardadas em menos de 120 s")
+	_fora(t)
+	return true
+
+
+## A festa no céu fecha o jogo: amigos de todas as fases sobem pelo alçapão.
+func teste_festa_com_os_amigos() -> bool:
+	var t := await _cena(Jogo.TELHADO) as Telhado
+	t.festa_final()
+	var nomes: Array[String] = []
+	for a: Node2D in t.amigos:
+		nomes.append(String(a.get_meta("quem")))
+	nomes.sort()
+	igual(nomes, ["dracula", "fantasma_mamae", "fantasmao", "frankenstein", "lobisomem", "mumia"], "os amigos das outras fases vieram")
+	igual(t.em_festa, true, "em festa")
+	igual(t.ceu.festa_na_frente(), true, "na festa constelações e fogos ficam na frente do telhado")
 	_fora(t)
 	return true
