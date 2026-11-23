@@ -213,8 +213,8 @@ posições e tamanhos ficam pro construtor.
   o vaga-lume; estrela errada da constelação não é avanço; ovelhinha solta não
   sai da área; ovelhinha seguindo acompanha a criança pelo portão.
 - `--autoplay` de ponta a ponta: jardim → castelo → laboratório → cemitério →
-  escada → telhado (com um erro de propósito: estrela errada na constelação,
-  planetinha passando por ninho de outra cor, portão trancado) → festa no céu →
+  escada → telhado (com um erro de propósito: estrela errada na constelação e
+  portão trancado; ninho de outra cor fica num teste de cena) → festa no céu →
   A → jardim. `--fase=telhado` e `--sala=` funcionam.
 
 ## Conteúdo novo
@@ -261,5 +261,10 @@ posições de ninhos e pontos de queda; tempos, velocidades e atrito exatos
   piscando, e as constelações prontas aparecem nele, pequenas, no alto); o
   fundo do mapa fica transparente, então o céu aparece entre os telhadinhos,
   de qualquer área e na festa.
+- **Ajuda na mira** dos planetinhas: se o empurrão sai até ~60° torto em
+  relação ao ninho do planetinha, ele vai reto pro ninho; o ninho "puxa" o
+  planetinha da cor dele de um pouco longe. Sem isso empurrar com jeito seria
+  difícil demais pra 5 anos.
+- Estrela cadente nunca cai perto da criança (ficar parado não pega estrela).
 - Planetinhas não batem uns nos outros (passam por cima) e nem em
   personagens; planetinha no ninho certo fica lá pra sempre.
