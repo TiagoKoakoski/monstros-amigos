@@ -19,7 +19,8 @@ func _rodar() -> void:
 	jogo.progresso = Progresso.new(PROGRESSO)  # nunca o da criança
 	jogo.progresso.apagar()
 	for t: String in ["teste_escada_apagada_sem_progresso", "teste_escada_acesa_com_progresso",
-			"teste_escada_fora_do_caminho", "teste_telhado_marca_progresso", "teste_fundo_transparente_so_no_telhado"]:
+			"teste_escada_fora_do_caminho", "teste_telhado_marca_progresso", "teste_fundo_transparente_so_no_telhado",
+			"teste_parado_nao_pega_estrela", "teste_estrelas_andando_pega_todas"]:
 		if await call(t) != true:
 			falhou += 1
 			push_error("FALHOU %s: não terminou" % t)

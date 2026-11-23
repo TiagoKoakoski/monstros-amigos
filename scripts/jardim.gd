@@ -412,7 +412,7 @@ func verificar_fim_auto() -> Array[String]:
 	return falhas
 
 
-## Voltou da festa do cemitério pelo botão A: o jardim tem que estar limpo e
+## Voltou da festa do telhado (fim do jogo) pelo botão A: o jardim tem que estar limpo e
 ## com a porta do castelo já aberta. Depois joga o jardim de novo (com a
 ## porta aberta desde o começo) até entrar pela porta.
 func _conferir_recomeco() -> void:
@@ -433,6 +433,6 @@ func _conferir_recomeco() -> void:
 			falha_auto(f)
 		_sair_com(_auto_falhas)
 		return
-	print("AUTOPLAY: botão A na festa do cemitério voltou pro jardim limpo, com a porta aberta")
+	print("AUTOPLAY: botão A na festa do telhado voltou pro jardim limpo, com a porta aberta")
 	Jogo.marcos_globais["segunda_volta"] = true
 	marco("jardim_de_novo", 0.5)
