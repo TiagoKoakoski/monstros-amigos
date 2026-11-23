@@ -1,7 +1,8 @@
 class_name PortaFundos
 extends Node2D
-## Porta dos fundos do laboratório (parede de cima da sala da máquina): sai
-## pro cemitério. Fechada até a festa (ou aberta desde o começo, com progresso).
+## Passagem pra próxima fase: a porta dos fundos do laboratório (sai pro
+## cemitério) e a escada da torre do cemitério (sobe pro telhado). Fechada até
+## a festa (ou aberta desde o começo, com progresso).
 
 const RAIO := 90.0
 
@@ -14,16 +15,18 @@ var _luz: Sprite2D
 var _tempo := 0.0
 
 
-## `pes`: base da porta (encostada na parede); `p_ponto`: onde encostar.
-func configurar(pes: Vector2, p_ponto: Vector2, p_aberta: bool) -> void:
+## `pes`: base da porta (encostada na parede); `p_ponto`: onde encostar;
+## `arte_*`: desenhos (em arte/) fechada e aberta.
+func configurar(pes: Vector2, p_ponto: Vector2, p_aberta: bool, arte_fechada := "porta_fundos_fechada",
+		arte_aberta := "porta_fundos_aberta") -> void:
 	position = pes
 	ponto = p_ponto
 	_luz = Visual.luz(Color(0.6, 0.85, 1.0, 0.0), 380.0)
 	_luz.position = Vector2(0, -60)
 	add_child(_luz)
-	_fechada = Visual.sprite_em_pe(load("res://arte/porta_fundos_fechada.svg") as Texture2D)
+	_fechada = Visual.sprite_em_pe(load("res://arte/%s.svg" % arte_fechada) as Texture2D)
 	add_child(_fechada)
-	_aberta = Visual.sprite_em_pe(load("res://arte/porta_fundos_aberta.svg") as Texture2D)
+	_aberta = Visual.sprite_em_pe(load("res://arte/%s.svg" % arte_aberta) as Texture2D)
 	add_child(_aberta)
 	aberta = p_aberta
 	_fechada.visible = not aberta

@@ -72,14 +72,32 @@ praça no meio e 4 áreas cercadas por cerca viva, com portões coloridos:
 
 - Os esconderijos dos fantasminhas mudam a cada partida.
 - Vaga-lume no cemitério espera **14 s**.
-- Festa na praça com todo mundo; qualquer botão volta pro jardim.
+- Festa na praça com todo mundo. Depois a **escada da torre** acende e o Fantasmão
+  flutua até ela: sobe pro telhado.
+
+## Fase 5 — o telhado das estrelas (topo da torre)
+
+A fase mais calma, pra antes de dormir: céu azul profundo com lua grande,
+lanterninhas e chaminés. Um terraço no meio e 4 telhadinhos com muretas:
+
+| Telhadinho | O que fazer | Ganha |
+|---|---|---|
+| **Estrelas** (Coruja, aberto) | estrelas cadentes caem devagar (primeiro aparece a sombra brilhante de onde vão cair); encostar numa estrela no chão e ela voa pro pote. 6 estrelas | chave azul |
+| **Constelações** (Gato astrônomo, portão azul) | ligar as estrelas do chão na ordem: a próxima pisca dourada, um risco de luz liga uma na outra. Gato, morcego e peixe (6, 7 e 8 estrelas); cada desenho pronto sobe pro céu | chave verde |
+| **Planetinhas** (Dona Lua, portão verde) | empurrar os 3 planetinhas (encostando) até o ninho da cor deles. Eles rolam e quicam nas bordas; a mira ajuda um pouco | chave laranja |
+| **Ovelhinhas** (Ovelhona, portão laranja) | pegar as 4 ovelhinhas de nuvem (cada uma dá um pulinho pra longe uma vez só) e levar até a porteira do cercadinho: uma por uma pula a cerca e dorme | festa! |
+
+- Vaga-lume no telhado espera **14 s**.
+- **Festa no céu** fecha o jogo: os amigos de todas as fases sobem pelo alçapão
+  (Drácula, Frankenstein, Múmia, Lobisomem, Fantasma mamãe e Fantasmão), as
+  constelações acendem e tem fogos de estrelinha. Qualquer botão volta pro jardim.
 
 ## Progresso
 
 Depois que ele entrou no castelo uma vez, nas próximas partidas a porta do
 castelo já começa aberta; depois que chegou no laboratório, o alçapão do salão
 já começa aberto (atalho a qualquer momento); depois do cemitério, a porta dos
-fundos do laboratório também. Pra zerar:
+fundos do laboratório também; depois do telhado, a escada da torre do cemitério. Pra zerar:
 `rm ~/.local/share/godot/app_userdata/Monstros\ Amigos/progresso.cfg`
 
 ## Teste com a criança (o que observar)
@@ -112,6 +130,12 @@ No cemitério:
 16. Segue as pegadas no labirinto? Se perde?
 17. O pega-pega diverte ou cansa? Os fantasmas assustam em algum momento?
 
+No telhado:
+18. Ele espera a estrela pousar ou corre atrás da sombra?
+19. Segue a estrela dourada nas constelações? Reconhece o gato, o morcego e o peixe?
+20. Entende empurrar o planetinha (e dar a volta pra empurrar do outro lado)?
+21. Consegue levar as ovelhinhas em fila até a porteira? A fase acalma ou agita?
+
 ## Verificação
 
 ```bash
@@ -123,12 +147,15 @@ godot --headless --path . --script res://tests/teste_laboratorio.gd  # regras do
 godot --headless --path . res://tests/teste_laboratorio_cena.tscn     # alçapão e laboratório montados (32)
 godot --headless --path . --script res://tests/teste_cemiterio.gd    # regras do cemitério (110)
 godot --headless --path . res://tests/teste_cemiterio_cena.tscn       # porta dos fundos e cemitério montados (38)
-godot --path . -- --autoplay --capturas=/tmp/fotos                     # joga o jogo inteiro sozinho e fotografa (~8 min)
+godot --headless --path . --script res://tests/teste_telhado.gd      # regras do telhado (86)
+godot --headless --path . res://tests/teste_telhado_cena.tscn         # escada da torre e telhado montados (59)
+godot --path . -- --autoplay --capturas=/tmp/fotos                     # joga o jogo inteiro sozinho e fotografa (~10 min; a pasta tem que existir)
 godot --path . -- --fase=castelo --autoplay                            # começa direto no castelo
 godot --path . -- --fase=castelo --autoplay --sala=caixas              # testa uma sala só (as anteriores dadas por feitas)
 godot --path . -- --fase=laboratorio --autoplay                        # começa direto no laboratório
 godot --path . -- --fase=laboratorio --autoplay --sala=canos           # uma sala do laboratório (pocoes, canos, formas)
 godot --path . -- --fase=cemiterio --autoplay --sala=horta             # uma área do cemitério (lapides, horta, labirinto, arena)
+godot --path . -- --fase=telhado --autoplay --sala=planetas            # um telhadinho (estrelas, constelacoes, planetas, ovelhas)
 ```
 
 Opções de teste: `--manter-progresso` (não apaga o progresso de teste), `--depurar`
@@ -145,7 +172,10 @@ verde trancada, faz um "plop" de propósito, para em cima do cano-armadilha, err
 uma forma de propósito, vê a festa e sai pela porta dos fundos. No cemitério:
 espera o vaga-lume, encosta no portão roxo trancado, procura num esconderijo
 vazio, leva água a um canteiro vazio e devolve no poço, entra num beco do
-labirinto, pega o Fantasmão 3 vezes, vê a festa, aperta o botão A (pelo caminho de um controle
+labirinto, pega o Fantasmão 3 vezes, vê a festa e sobe a escada da torre. No telhado:
+espera o vaga-lume, encosta no portão azul trancado, pega as 6 estrelas, toca uma
+estrela errada de propósito, desenha as 3 constelações, empurra os planetinhas,
+guarda as ovelhinhas, vê a festa no céu, aperta o botão A (pelo caminho de um controle
 de verdade), confere que o jardim voltou limpo **com a porta aberta**, e joga o
 jardim de novo até a porta.
 Avisa se travar em algum obstáculo. Sai com código 0 se tudo deu certo.
@@ -158,11 +188,13 @@ Avisa se travar em algum obstáculo. Sai com código 0 se tudo deu certo.
   com chave, chaveiro, rota do vaga-lume, piloto por sala, `--sala=`) + `atividade`, `porta`, `chaveiro`.
 - `scripts/jardim.gd` — fase 1. `scripts/castelo/castelo.gd` — fase 2 (+ `alcapao`).
   `scripts/laboratorio/laboratorio.gd` — fase 3 (+ `maquina`, `porta_fundos`).
-  `scripts/cemiterio/cemiterio.gd` — fase 4.
+  `scripts/cemiterio/cemiterio.gd` — fase 4. `scripts/telhado/telhado.gd` — fase 5 (+ `ceu`).
 - `scripts/castelo/*.gd` — uma sala por arquivo (`cozinha`, `musica`, `biblioteca`,
   `corredor_caixas`, `quarto`) + peças (`ladrilho`, `vela`, `caixa`, `filhote`).
 - `scripts/laboratorio/*.gd` — `pocoes`, `canos` (+ `peca_cano`), `formas` (+ `botao_forma`, `painel`).
 - `scripts/cemiterio/*.gd` — `lapides` (+ `fantasminha`), `horta`, `labirinto`, `arena` (+ `fantasmao`).
+- `scripts/telhado/*.gd` — `estrelas_cadentes` (+ `estrela_cadente`), `constelacoes`,
+  `planetinhas` (+ `planetinha`), `ovelhinhas` (+ `ovelhinha`).
 - `scripts/estado_missao.gd`, `scripts/regras/*.gd` — regras puras, testadas sem cena.
 - `scripts/jogador.gd`, `monstro.gd`, `item_perdido.gd`, `guia.gd`, `visual.gd`.
 - `scripts/controles.gd` — mapa de controles (autoload), zona morta 0,25.
@@ -173,5 +205,5 @@ Avisa se travar em algum obstáculo. Sai com código 0 se tudo deu certo.
 
 - **Voz dos monstros** em português (VoiceStudio local, voz de banco — nunca
   clonar voz de pessoa real), pra ele ouvir o que cada um quer.
-- Próximas fases combinadas: telhado das estrelas e, depois, dois jogadores.
+- Próxima etapa combinada: dois jogadores.
 - Designs e planos: `docs/superpowers/specs/` e `docs/superpowers/plans/`.

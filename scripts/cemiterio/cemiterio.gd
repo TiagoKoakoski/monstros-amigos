@@ -8,6 +8,8 @@ extends FaseDeSalas
 ##   [Lápides]=====[ PRAÇA ]==roxo==[Horta]
 ##   aberta           | rosa
 ##                 [Arena]
+##
+## Na festa acende a escada da torre (canto de cima da praça): sobe pro telhado.
 
 const W := 4000.0
 const H := 3400.0
@@ -38,8 +40,16 @@ const ORDEM: Array[String] = ["lapides", "horta", "labirinto", "arena"]
 const CHAVE_DA_SALA := {"lapides": "roxa", "horta": "amarela", "labirinto": "rosa"}
 const PORTAS := {"horta": "roxa", "labirinto": "amarela", "arena": "rosa"}
 const CORES_PORTA := {"horta": Color("#a66bff"), "labirinto": Color("#ffd23f"), "arena": Color("#ff9ecb")}
+## escada da torre: pés no canto de cima da praça, longe dos caminhos entre os portões
+const ESCADA := Vector2(2520, 1300)
+## onde encostar pra subir (na frente da escada)
+const PE_DA_ESCADA := Vector2(2520, 1370)
 const GRAMA := Color("#7fb8a0")
 const GRAMA_LINHA := Color("#74ad95")
+
+var escada: PortaFundos
+var _ir_pra_escada := false
+var _subindo := false
 
 
 func configurar_mapa() -> void:
@@ -89,11 +99,10 @@ func decorar() -> void:
 	portinha.texture = load("res://arte/portinha.svg") as Texture2D
 	portinha.position = Vector2(1700, 1330)
 	no_chao(portinha)
-	# escada da torre (o telhado vem depois): enfeite fechado
-	var torre := Visual.sprite_em_pe(load("res://arte/escada_torre.svg") as Texture2D)
-	torre.position = Vector2(2520, 1300)
-	torre.z_index = 1
-	add_child(torre)
+	# escada da torre: apagada até a festa (acesa desde o começo com o telhado no progresso)
+	escada = PortaFundos.new()
+	escada.configurar(ESCADA, PE_DA_ESCADA, Jogo.progresso.alcancou("telhado"), "escada_torre", "escada_torre_acesa")
+	no_mundo(escada)
 	for pos: Vector2 in [Vector2(1580, 1260), Vector2(2620, 1500), Vector2(1580, 2120), Vector2(2620, 2120)]:
 		enfeite("lanterna", pos, Vector2.ZERO)
 		var luz := Visual.luz(Color(1.0, 0.85, 0.5, 0.35), 520.0)
@@ -134,12 +143,71 @@ func festa_final() -> void:
 			var t := create_tween()
 			t.tween_interval(1.0 + j * 0.15)
 			t.tween_property(filhos[j], "global_position", SALAO.get_center() + Vector2(cos(a) * 520.0, 60.0 + sin(a) * 260.0), 1.8).set_trans(Tween.TRANS_SINE)
-	comecar_festa(SALAO.get_center() + Vector2(0, -60), true)
+	comecar_festa(SALAO.get_center() + Vector2(0, -60), false)
 	marco("festa_cemiterio", 4.0)
+	var t := create_tween()
+	t.tween_interval(5.0)
+	t.tween_callback(_acender_escada)
+	t.tween_interval(2.4)
+	t.tween_callback(func() -> void:
+		(get_node("Interface/Chuva") as CPUParticles2D).emitting = false
+		_ir_pra_escada = true
+		_tempo_sem_progresso = espera_guia - 1.0  # vaga-lume aparece logo
+		seguir_jogador())
 
 
-func ao_recomecar() -> void:
-	Jogo.trocar_fase(Jogo.JARDIM)
+## A escada da torre acende e o Fantasmão flutua até ela na frente (mostra o caminho).
+func _acender_escada() -> void:
+	if not escada.aberta:
+		escada.abrir()
+		tocar("porta")
+	marco("escada_acesa", 2.0)
+	if not atividades.has("arena"):
+		return
+	var f := (atividades["arena"] as Arena).fantasmao
+	var t := create_tween()
+	t.tween_property(f, "global_position", PE_DA_ESCADA + Vector2(0, -30), 1.6).set_trans(Tween.TRANS_SINE)
+	t.tween_property(f, "scale", Vector2.ONE * 0.3, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	t.parallel().tween_property(f, "modulate:a", 0.0, 0.5)
+
+
+func guia_ligado() -> bool:
+	return not em_festa or _ir_pra_escada
+
+
+func alvo_atual() -> Vector2:
+	if _ir_pra_escada:
+		return _ate_a_escada()
+	return super()
+
+
+## Caminho até a escada: se a festa pegou a criança numa área, primeiro sai dela.
+func _ate_a_escada() -> Vector2:
+	var aqui := sala_do_jogador()
+	if aqui != "":
+		return _saindo_de(aqui, _passar(VAOS[aqui], SALAO))
+	return PE_DA_ESCADA
+
+
+func checar_interacoes() -> void:
+	if escada.perto(jogador.global_position):
+		_subir()
+		return
+	super()
+
+
+func _subir() -> void:
+	if _subindo:
+		return
+	_subindo = true
+	if Jogo.auto:
+		marco("escada")
+		var falhas := _auto_falhas + verificar_fim_auto()
+		if not falhas.is_empty() or sala_pedida() != "":
+			_sair_com(falhas)
+			return
+	tocar("porta")
+	Jogo.trocar_fase(Jogo.TELHADO)
 
 
 # ---------------------------------------------------------------- teste automático
@@ -157,7 +225,7 @@ func tempo_limite_auto() -> float:
 
 func pilotar_auto(delta: float) -> Vector2:
 	if em_festa:
-		return Vector2.ZERO
+		return andar_ate(_ate_a_escada(), delta) if _ir_pra_escada else Vector2.ZERO
 	if _tempo > 2.0:
 		marco("inicio_cemiterio", 0.0)
 	if esperar_guia_auto():
@@ -172,8 +240,8 @@ func pilotar_auto(delta: float) -> Vector2:
 
 func marcos_obrigatorios() -> Array[String]:
 	if sala_pedida() != "":
-		return ["festa_cemiterio", "pode_recomecar"]
+		return ["festa_cemiterio", "escada"]
 	return ["inicio_cemiterio", "guia", "trancada", "vazio", "lapides", "chave_roxa", "abriu_horta", "hum_horta", "devolveu",
 		"horta", "chave_amarela", "abriu_labirinto", "beco", "labirinto",
 		"chave_rosa", "abriu_arena", "pegou_1", "pegou_2", "pegou_3", "arena",
-		"festa_cemiterio", "pode_recomecar"]
+		"festa_cemiterio", "escada_acesa", "escada"]
